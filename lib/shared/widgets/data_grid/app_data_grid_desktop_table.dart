@@ -1,0 +1,204 @@
+import 'dart:math' as math;
+
+import 'package:rrhh_sipe_sipe/core/theme/ui_colors.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/data_grid/app_data_grid_action.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/data_grid/app_data_grid_actions_bar.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/data_grid/app_data_grid_cell_type.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/data_grid/app_data_grid_column.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/data_grid/app_data_grid_value_utils.dart';
+import 'package:data_table_2/data_table_2.dart';
+import 'package:flutter/material.dart';
+
+class AppDataGridDesktopTable<T> extends StatelessWidget {
+  const AppDataGridDesktopTable({
+    required this.items,
+    required this.columns,
+    required this.actions,
+    required this.nullLabel,
+    required this.allowSorting,
+    required this.sortColumnKey,
+    required this.sortAscending,
+    required this.onSort,
+    this.onRowTap,
+    this.onRowDoubleTap,
+    this.rowActionsBuilder,
+    super.key,
+  });
+
+  final List<T> items;
+  final List<AppDataGridColumn<T>> columns;
+  final List<AppDataGridAction<T>> actions;
+  final String nullLabel;
+  final bool allowSorting;
+  final String? sortColumnKey;
+  final bool sortAscending;
+  final void Function(String key, bool ascending) onSort;
+  final void Function(T item)? onRowTap;
+  final void Function(T item)? onRowDoubleTap;
+  final Widget Function(BuildContext context, T item)? rowActionsBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleColumns = columns.where((column) => column.visible).toList();
+    final showActions = actions.isNotEmpty || rowActionsBuilder != null;
+    final sortIndex = sortColumnKey == null
+        ? null
+        : visibleColumns.indexWhere((column) => column.key == sortColumnKey);
+
+    final tableColumns = <DataColumn>[
+      ...visibleColumns.map((column) {
+        return DataColumn2(
+          label: Align(
+            alignment: column.headerAlignment ??
+                AppDataGridValueUtils.defaultAlignment(column.type),
+            child: Text(
+              column.label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5,
+                color: UiColors.textPrimary,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          size: _columnSize(column),
+          fixedWidth: column.width,
+          tooltip: !allowSorting || !column.sortable
+              ? null
+              : 'Ordenar por ${column.label}',
+          onSort: !allowSorting || !column.sortable
+              ? null
+              : (_, ascending) => onSort(column.key, ascending),
+        );
+      }),
+      if (showActions)
+        const DataColumn2(
+          label: Align(
+            alignment: Alignment.center,
+            child: Text(
+              'Acciones',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5,
+                color: UiColors.textPrimary,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          fixedWidth: 112,
+        ),
+    ];
+
+    return DataTable2(
+      columnSpacing: 16,
+      horizontalMargin: 16,
+      minWidth: _minTableWidth(visibleColumns, showActions),
+      headingRowHeight: 46,
+      dataRowHeight: 48,
+      sortColumnIndex: sortIndex,
+      sortAscending: sortAscending,
+      headingRowColor: WidgetStateProperty.all(UiColors.background),
+      dataRowColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.hovered)) {
+          return UiColors.primarySoft.withOpacity(0.18);
+        }
+        if (states.contains(WidgetState.selected)) {
+          return UiColors.primarySoft.withOpacity(0.35);
+        }
+        return null;
+      }),
+      dividerThickness: 1,
+      border: const TableBorder(
+        bottom: BorderSide(color: UiColors.borderLight, width: 1.5),
+        horizontalInside: BorderSide(color: UiColors.borderLight, width: 1),
+      ),
+      columns: tableColumns,
+      rows: items.map((item) {
+        return DataRow2(
+          onTap: onRowTap == null ? null : () => onRowTap!(item),
+          onDoubleTap:
+              onRowDoubleTap == null ? null : () => onRowDoubleTap!(item),
+          cells: [
+            ...visibleColumns.map(
+              (column) => DataCell(
+                Align(
+                  alignment: column.alignment ??
+                      AppDataGridValueUtils.defaultAlignment(column.type),
+                  child: _buildCell(context, column, item),
+                ),
+              ),
+            ),
+            if (showActions)
+              DataCell(
+                Align(
+                  alignment: Alignment.center,
+                  child: rowActionsBuilder?.call(context, item) ??
+                      AppDataGridActionsBar<T>(
+                        item: item,
+                        actions: actions,
+                        iconButtonSize: 36,
+                      ),
+                ),
+              ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCell(BuildContext context, AppDataGridColumn<T> column, T item) {
+    final value = column.value(item);
+    if (column.cellBuilder != null) {
+      return column.cellBuilder!(context, item, value);
+    }
+    return Text(
+      AppDataGridValueUtils.formatValue(
+        column: column,
+        value: value,
+        nullLabel: nullLabel,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 13,
+        color: UiColors.textPrimary,
+        height: 1.3,
+      ),
+    );
+  }
+
+  ColumnSize _columnSize(AppDataGridColumn<T> column) {
+    if (column.width != null && column.width! <= 120) return ColumnSize.S;
+    if (column.type == AppDataGridCellType.text && column.width == null) {
+      return ColumnSize.L;
+    }
+    return ColumnSize.M;
+  }
+
+  static double estimateMinWidth<T>(
+    List<AppDataGridColumn<T>> columns,
+    List<AppDataGridAction<T>> actions, {
+    Widget Function(BuildContext context, T item)? rowActionsBuilder,
+  }) {
+    final visibleColumns = columns.where((column) => column.visible).toList();
+    final showActions = actions.isNotEmpty || rowActionsBuilder != null;
+    var width = 0.0;
+    for (final column in visibleColumns) {
+      width += column.width ?? column.minWidth ?? 140;
+    }
+    if (showActions) width += 112;
+    return math.max(640, width);
+  }
+
+  double _minTableWidth(
+    List<AppDataGridColumn<T>> visibleColumns,
+    bool showActions,
+  ) {
+    var width = 0.0;
+    for (final column in visibleColumns) {
+      width += column.width ?? column.minWidth ?? 140;
+    }
+    if (showActions) width += 112;
+    return math.max(640, width);
+  }
+}

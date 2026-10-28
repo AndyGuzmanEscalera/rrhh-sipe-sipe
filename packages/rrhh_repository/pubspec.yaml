@@ -1,0 +1,22 @@
+name: rrhh_repository
+description: Repository layer for the Recursos Humanos GAM Sipe Sipe app.
+version: 0.1.0+1
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.4.4 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  equatable: ^2.0.5
+  failures:
+    path: ../failures
+  rrhh_api:
+    path: ../rrhh_api
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  dio: ^5.7.0

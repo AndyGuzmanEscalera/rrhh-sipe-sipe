@@ -45,8 +45,9 @@ class _AttendanceViewState extends State<AttendanceView> {
         builder: (context) => AlertDialog(
                 title: const Text('Sincronizar biométrico'),
                 content: const Text(
-                    'El backend descargará todo el histórico del dispositivo y lo guardará sin duplicados. '
-                    'Puede tardar varios minutos. El rango no reduce la descarga remota.'),
+                    'El backend descargará las marcaciones del rango seleccionado '
+                    'desde la API biométrica y las guardará sin duplicados. '
+                    'Puede tardar según el tamaño del período.'),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -102,9 +103,14 @@ class _AttendanceViewState extends State<AttendanceView> {
                       Text(
                           state.checkingDevice
                               ? 'Consultando dispositivo…'
-                              : state.device?.connected == true
-                                  ? '${state.device?.model ?? 'Biométrico'} · conectado (${state.device?.transport ?? '—'})'
-                                  : 'Dispositivo sin conexión confirmada',
+                              : state.device?.apiAvailable == false
+                                  ? 'API biométrica no disponible'
+                                  : state.device?.apiAvailable == true &&
+                                          state.device?.deviceConnected == false
+                                      ? 'API disponible · dispositivo desconectado'
+                                      : state.device?.connected == true
+                                          ? '${state.device?.model ?? 'Biométrico'} · conectado (${state.device?.transport ?? '—'})'
+                                          : 'Dispositivo sin conexión confirmada',
                           style: const TextStyle(fontSize: 12)),
                       TextButton(
                           onPressed:
@@ -149,8 +155,10 @@ class _AttendanceViewState extends State<AttendanceView> {
                   const Padding(
                       padding: EdgeInsets.only(top: 8),
                       child: LinearProgressIndicator()),
-                if (job?.errorMessage != null)
-                  AttendanceNotice(job!.errorMessage!, error: true),
+                if (job?.status == 'failed')
+                  const AttendanceNotice(
+                      'La sincronización falló. Revise la conexión con la API biométrica y reintente.',
+                      error: true),
                 if (state.deviceError.isNotEmpty)
                   AttendanceNotice(state.deviceError, error: true),
                 if (state.syncError.isNotEmpty)

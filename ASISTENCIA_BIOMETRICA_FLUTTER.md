@@ -61,9 +61,10 @@ No se inicia ninguna descarga ni generación automáticamente. Consultar estado 
 operación del backend: Flutter nunca abre un socket al reloj.
 
 El botón de sincronización requiere `rrhh.manage`. Solicita un rango mediante el
-selector de fechas y explica que el lector descarga el histórico completo antes de
-persistirlo. Las fechas de ese selector no se presentan como una política de corte.
-El rango se limita al contrato existente del endpoint (367 días inclusivos).
+selector de fechas; el backend descarga ese período desde la Biometric API
+(`from`/`to`) y lo persiste sin duplicados. Flutter no habla con
+`https://biometric.sipesipe.gob.bo`. Las fechas del selector no se presentan como
+política de corte. El rango se limita al contrato del endpoint (367 días inclusivos).
 
 Un trabajo queued/running deshabilita otra solicitud. El Cubit consulta su estado
 cada tres segundos; usa progreso indeterminado, sin inventar porcentajes. Al completar,

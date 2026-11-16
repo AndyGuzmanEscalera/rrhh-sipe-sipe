@@ -7,6 +7,7 @@ import 'package:rrhh_sipe_sipe/features/app/cubit/app_session_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rrhh_api/rrhh_api.dart';
 
 class _FakeAuthRepository extends Fake implements AuthenticationRepository {}
 
@@ -29,6 +30,49 @@ void main() {
 
     tearDown(() async {
       await sessionCubit.close();
+    });
+
+    testWidgets(
+        'Gestor usa capacidades de la fachada sin obtener administración',
+        (tester) async {
+      // The API derives these reads from its institutional access policy.
+      // Flutter consumes the response; it does not grant permissions by role.
+      sessionCubit.onSignedIn(UserResponse.fromJson({
+        'id': 'gestor-fixture',
+        'username': 'gestor',
+        'is_active': true,
+        'roles': ['MANAGER'],
+        'permissions': [Permissions.attendanceRead, Permissions.employeesRead],
+      }).toEntity());
+      await tester.pumpWidget(MaterialApp(
+          home: Scaffold(
+        body: BlocProvider.value(
+            value: sessionCubit,
+            child: const Column(children: [
+              PermissionGuard(
+                  permission: Permissions.attendanceRead,
+                  child: Text('Lectura asistencia')),
+              PermissionGuard(
+                  permission: Permissions.employeesRead,
+                  child: Text('Lectura funcionarios')),
+              PermissionGuard(
+                  permission: Permissions.attendanceManage,
+                  child: Text('Administración RRHH')),
+            ])),
+      )));
+      expect(find.text('Lectura asistencia'), findsOneWidget);
+      expect(find.text('Lectura funcionarios'), findsOneWidget);
+      expect(find.text('Administración RRHH'), findsNothing);
+    });
+
+    test('Flutter no deduce permisos por el nombre del rol', () {
+      const session = UserSession(
+          id: 'fixture',
+          username: 'gestor',
+          isActive: true,
+          roles: ['MANAGER']);
+      expect(hasPermission(session, Permissions.attendanceRead), isFalse);
+      expect(hasPermission(session, Permissions.attendanceManage), isFalse);
     });
 
     Future<void> pumpGuard(

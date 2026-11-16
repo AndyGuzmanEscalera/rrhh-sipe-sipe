@@ -7,7 +7,7 @@ class AttendanceApi {
   final ApiMethod _api;
   Future<Map<String, dynamic>> parameters() => _api
       .get(Endpoints.attendanceParameters, operation: 'attendance.parameters');
-  Future<Map<String, dynamic>> saveParameters(Map<String, int> values) =>
+  Future<Map<String, dynamic>> saveParameters(Map<String, Object?> values) =>
       _api.put(Endpoints.attendanceParameters,
           data: values, operation: 'attendance.parameters.save');
   Future<Map<String, dynamic>> contracts() => _api

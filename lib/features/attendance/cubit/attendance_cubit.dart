@@ -88,7 +88,7 @@ class AttendanceCubit extends Cubit<AttendanceState> {
   void parametersDirty(bool value) =>
       emit(state.copyWith(dirty: value, parameterNotice: ''));
 
-  Future<void> saveParameters(Map<String, int> seconds) async {
+  Future<void> saveParameters(Map<String, Object?> seconds) async {
     if (state.saving || state.generating) return;
     emit(state.copyWith(saving: true, parameterError: '', parameterNotice: ''));
     final result = await _repository.saveParameters(seconds);

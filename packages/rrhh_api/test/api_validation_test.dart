@@ -20,6 +20,45 @@ class _Adapter implements HttpClientAdapter {
 
 void main() {
   for (final acceptStatus in [true, false]) {
+    for (final entry in {
+      'correspondencia_unavailable': 'Correspondencia no está disponible',
+      'biometric_api_unavailable': 'La API biométrica no está disponible',
+      'biometric_device_unreachable': 'el dispositivo está desconectado',
+      'parameters_overlap': 'La vigencia se superpone',
+      'unknown_private_code': 'No se pudo completar la operación',
+    }.entries) {
+      test('Error seguro ${entry.key}, validateStatus=$acceptStatus', () async {
+        final dio = Dio(BaseOptions(
+            baseUrl: 'http://localhost',
+            validateStatus: acceptStatus ? (_) => true : null))
+          ..httpClientAdapter = _Adapter(503, {
+            'detail': {
+              'code': entry.key,
+              'message': 'PRIVATE SQL password=hidden'
+            }
+          });
+        final result = await handleExceptions(
+            () => ApiMethod(dio: dio).get('/rrhh/biometric/status'));
+        final message =
+            FailureGeneric.message(failure: result.failureOrNull()!);
+        expect(message, contains(entry.value));
+        expect(message, isNot(contains('PRIVATE')));
+        dio.close();
+      });
+    }
+  }
+  test('Logs ocultan credenciales anidadas y Bearer de texto', () {
+    final encoded = ApiLogger.encodePayload({
+      'Authorization': 'Bearer PRIVATE',
+      'nested': [
+        {'set-cookie': 'PRIVATE', 'api_key': 'PRIVATE', 'password': 'PRIVATE'}
+      ]
+    });
+    expect(encoded, isNot(contains('PRIVATE')));
+    expect(ApiLogger.redactString('failed Bearer fixture.token-value'),
+        'failed Bearer ***');
+  });
+  for (final acceptStatus in [true, false]) {
     test(
         '422 atraviesa API, Result y FailureGeneric (validateStatus=$acceptStatus)',
         () async {

@@ -144,7 +144,8 @@ class ApiMethod {
       );
 
       final body = _bodyAsString(response.data);
-      ApiLogger.logSave('RESULT $tag ===> $body ${DateTime.now()}');
+      ApiLogger.logSave(
+          'RESULT $tag ===> ${ApiLogger.redactString(body)} ${DateTime.now()}');
 
       return (response.statusCode ?? 0, body);
     } on SocketException {
@@ -217,7 +218,8 @@ class ApiMethod {
       );
 
       final body = _bodyAsString(response.data);
-      ApiLogger.logSave('RESULT $tag ===> $body ${DateTime.now()}');
+      ApiLogger.logSave(
+          'RESULT $tag ===> ${ApiLogger.redactString(body)} ${DateTime.now()}');
 
       return body;
     } on SocketException {
@@ -363,7 +365,8 @@ class ApiMethod {
       default:
         if (statusCode >= 500) {
           return ServerException(
-            message: 'Error del servidor. Intente nuevamente.',
+            message: message ??
+                'La API RRHH no está disponible. Intente nuevamente.',
             statusCode: statusCode,
           );
         }
@@ -419,7 +422,8 @@ class ApiMethod {
         return TimeoutException();
       case DioExceptionType.connectionError:
         _logConnectionErrorHint(e.message);
-        return const NetworkException('Sin conexión con el servidor');
+        return const NetworkException(
+            'La API RRHH no está disponible. Revise la conexión.');
       case DioExceptionType.badResponse:
         if (status == 401) {
           return UnauthorizedException(backendMessage, statusCode: status);
@@ -443,7 +447,8 @@ class ApiMethod {
         }
         if (status != null && status >= 500) {
           return ServerException(
-            message: 'Error del servidor. Intente nuevamente.',
+            message: backendMessage ??
+                'La API RRHH no está disponible. Intente nuevamente.',
             statusCode: status,
           );
         }
@@ -455,7 +460,8 @@ class ApiMethod {
       case DioExceptionType.badCertificate:
       case DioExceptionType.unknown:
       case DioExceptionType.transformTimeout:
-        return const NetworkException('Sin conexión con el servidor');
+        return const NetworkException(
+            'La API RRHH no está disponible. Revise la conexión.');
     }
   }
 
@@ -474,6 +480,30 @@ class ApiMethod {
   String? _extractMessage(dynamic data) {
     if (data is Map) {
       final detail = data['detail'];
+      if (detail is Map) {
+        final code = detail['code']?.toString() ?? '';
+        if (code.startsWith('correspondencia_')) {
+          return code == 'correspondencia_rejected'
+              ? 'Correspondencia rechazó la sesión o los permisos.'
+              : 'Correspondencia no está disponible. Intente nuevamente.';
+        }
+        if (code.startsWith('biometric_api_')) {
+          return 'La API biométrica no está disponible. Intente nuevamente.';
+        }
+        if (code == 'biometric_device_unreachable') {
+          return 'La API biométrica responde, pero el dispositivo está desconectado.';
+        }
+        if (code == 'parameters_overlap') {
+          return 'La vigencia se superpone con una revisión guardada. Seleccione un período nuevo.';
+        }
+        if (code == 'biometric_sync_in_progress') {
+          return 'Ya existe una sincronización pendiente o en curso.';
+        }
+        if (code == 'permission_denied') {
+          return 'No tiene permisos para esta operación.';
+        }
+        return 'No se pudo completar la operación. Revise la configuración o intente nuevamente.';
+      }
       if (detail is String && detail.isNotEmpty) return detail;
       if (detail is List && detail.isNotEmpty) {
         return detail

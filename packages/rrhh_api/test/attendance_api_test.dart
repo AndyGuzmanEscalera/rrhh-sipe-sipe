@@ -58,10 +58,15 @@ void main() {
     final adapter = _Adapter();
     final dio = Dio()..httpClientAdapter = adapter;
     final api = AttendanceApi(mainApi: ApiMethod(dio: dio));
-    await api.saveParameters({'duplicate_window': 300});
+    final parameters = <String, Object?>{
+      'duplicate_window': 300,
+      'valid_from': '2026-11-01',
+      'valid_to': null
+    };
+    await api.saveParameters(parameters);
     await api.synchronize(start: '2026-10-01', end: '2026-10-02');
     expect(adapter.calls[0].method, 'PUT');
-    expect(adapter.calls[0].data, {'duplicate_window': 300});
+    expect(adapter.calls[0].data, parameters);
     expect(adapter.calls[1].path, '/rrhh/biometric/sync');
     expect(adapter.calls[1].data,
         {'start_date': '2026-10-01', 'end_date': '2026-10-02'});

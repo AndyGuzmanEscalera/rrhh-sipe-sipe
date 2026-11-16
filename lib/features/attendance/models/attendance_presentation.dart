@@ -53,6 +53,11 @@ String attendanceDependency(String key) =>
           'Turno histórico o calendario laboral sin configurar',
       'association_windows': 'Ventanas de asociación de marcaciones pendientes',
       'attendance_parameters': 'Parámetros de asistencia sin configurar',
+      'biometric_coverage':
+          'Cobertura de marcaciones incompleta o todavía abierta',
+      'confirmed_work_calendar':
+          'Calendario laboral sin confirmar para estas fechas',
+      'overnight_shift_policy': 'Reglas de turnos nocturnos pendientes',
       'biometric_employee_link':
           'Vínculo explícito entre biométrico y funcionario pendiente',
       'exit_tolerance_semantics':

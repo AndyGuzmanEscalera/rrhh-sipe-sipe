@@ -23,6 +23,8 @@ class AttendanceParametersForm extends StatefulWidget {
 
 class _AttendanceParametersFormState extends State<AttendanceParametersForm> {
   final _form = GlobalKey<FormState>();
+  final _validFrom = TextEditingController();
+  final _validTo = TextEditingController();
   final _controllers = {
     for (final key in AttendanceParameters.keys) key: TextEditingController()
   };
@@ -47,6 +49,8 @@ class _AttendanceParametersFormState extends State<AttendanceParametersForm> {
   }
 
   void _fill() {
+    _validFrom.text = _iso(widget.parameters.validFrom);
+    _validTo.text = _iso(widget.parameters.validTo);
     for (final key in AttendanceParameters.keys) {
       final seconds = widget.parameters.seconds[key];
       _controllers[key]!.text =
@@ -64,8 +68,21 @@ class _AttendanceParametersFormState extends State<AttendanceParametersForm> {
     return seconds.round();
   }
 
+  String _iso(DateTime? value) => value == null
+      ? ''
+      : '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  DateTime? _parseDay(String text) {
+    final value = text.trim();
+    if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) return null;
+    final date = DateTime.tryParse(value);
+    return date != null && _iso(date) == value ? date : null;
+  }
+
   @override
   void dispose() {
+    _validFrom.dispose();
+    _validTo.dispose();
     for (final controller in _controllers.values) {
       controller.dispose();
     }
@@ -76,6 +93,46 @@ class _AttendanceParametersFormState extends State<AttendanceParametersForm> {
   Widget build(BuildContext context) => Form(
       key: _form,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text(
+            'Vigencia de la revisión. Los cambios no reemplazan parámetros históricos.',
+            style: TextStyle(fontSize: 12)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 12, runSpacing: 12, children: [
+          SizedBox(
+              width: 240,
+              child: TextFormField(
+                key: const ValueKey('parameter-valid-from'),
+                controller: _validFrom,
+                enabled: widget.canManage && !widget.busy,
+                decoration:
+                    AppFormFieldStyle.decoration(label: 'Desde (AAAA-MM-DD)'),
+                onChanged: (_) =>
+                    context.read<AttendanceCubit>().parametersDirty(true),
+                validator: (text) => _parseDay(text ?? '') == null
+                    ? 'Ingrese una fecha válida.'
+                    : null,
+              )),
+          SizedBox(
+              width: 240,
+              child: TextFormField(
+                key: const ValueKey('parameter-valid-to'),
+                controller: _validTo,
+                enabled: widget.canManage && !widget.busy,
+                decoration: AppFormFieldStyle.decoration(
+                    label: 'Hasta (opcional, AAAA-MM-DD)'),
+                onChanged: (_) =>
+                    context.read<AttendanceCubit>().parametersDirty(true),
+                validator: (text) {
+                  if ((text ?? '').trim().isEmpty) return null;
+                  final end = _parseDay(text!);
+                  final start = _parseDay(_validFrom.text);
+                  return end == null || (start != null && end.isBefore(start))
+                      ? 'Revise el fin de vigencia.'
+                      : null;
+                },
+              )),
+        ]),
+        const SizedBox(height: 12),
         LayoutBuilder(builder: (context, size) {
           final columns = size.maxWidth >= 1000
               ? 3
@@ -114,6 +171,10 @@ class _AttendanceParametersFormState extends State<AttendanceParametersForm> {
                       : () {
                           if (!_form.currentState!.validate()) return;
                           context.read<AttendanceCubit>().saveParameters({
+                            'valid_from': _validFrom.text.trim(),
+                            'valid_to': _validTo.text.trim().isEmpty
+                                ? null
+                                : _validTo.text.trim(),
                             for (final key in AttendanceParameters.keys)
                               key: _seconds(_controllers[key]!.text)!
                           });

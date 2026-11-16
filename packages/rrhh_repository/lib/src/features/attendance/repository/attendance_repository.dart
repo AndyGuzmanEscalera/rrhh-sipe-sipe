@@ -12,7 +12,7 @@ class AttendanceRepository {
       'parameters',
       () async => AttendanceParameters.fromJson(await _api.parameters()));
   Future<Result<AttendanceParameters, Failure>> saveParameters(
-          Map<String, int> seconds) =>
+          Map<String, Object?> seconds) =>
       _read(
           'saveParameters',
           () async => AttendanceParameters.fromJson(

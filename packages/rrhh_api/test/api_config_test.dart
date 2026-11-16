@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 const _isDemo = String.fromEnvironment('API_BASE_URL') == '/api';
 
 void main() {
-  const expectedBaseUrl = _isDemo ? '/api' : 'http://localhost:8000';
+  const expectedBaseUrl = _isDemo ? '/api' : 'http://localhost:8200';
 
   test('ApiConfig usa el default local o el define demo /api', () {
     expect(ApiConfig.baseUrl, expectedBaseUrl);

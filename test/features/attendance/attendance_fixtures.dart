@@ -12,6 +12,8 @@ Map<String, dynamic> parameterJson({int entry = 300}) => {
       'minimum_return_interval': 1800,
       'duplicate_window': 300,
       'configured': true,
+      'valid_from': '2026-10-01',
+      'valid_to': '2026-10-31',
       'updated_at': '2026-10-27T10:00:00Z',
     };
 Map<String, dynamic> employeeJson(
@@ -213,7 +215,7 @@ class FakeAttendanceRepository extends Fake implements AttendanceRepository {
   });
   BiometricSync? latest;
   int generateCalls = 0, syncCalls = 0, statusCalls = 0, parameterCalls = 0;
-  final List<Map<String, int>> saves = [];
+  final List<Map<String, Object?>> saves = [];
   final List<(String, AttendanceFilter)> reports = [];
   Future<Result<AttendanceGeneration, Failure>> Function()? generateOverride;
   @override
@@ -224,7 +226,7 @@ class FakeAttendanceRepository extends Fake implements AttendanceRepository {
 
   @override
   Future<Result<AttendanceParameters, Failure>> saveParameters(
-      Map<String, int> seconds) async {
+      Map<String, Object?> seconds) async {
     saves.add(seconds);
     return ok(AttendanceParameters.fromJson({...seconds, 'configured': true}));
   }

@@ -40,7 +40,9 @@ class AttendanceParameters {
       : seconds = Map.unmodifiable(
             {for (final key in keys) key: (j[key] as num?)?.toInt()}),
         configured = j['configured'] == true,
-        updatedAt = _date(j['updated_at']);
+        updatedAt = _date(j['updated_at']),
+        validFrom = _date(j['valid_from']),
+        validTo = _date(j['valid_to']);
   static const keys = [
     'morning_entry_tolerance',
     'morning_exit_tolerance',
@@ -52,15 +54,19 @@ class AttendanceParameters {
   final Map<String, int?> seconds;
   final bool configured;
   final DateTime? updatedAt;
+  final DateTime? validFrom, validTo;
 }
 
 class BiometricDeviceStatus {
   BiometricDeviceStatus.fromJson(AttendanceJson j)
       : connected = j['connected'] == true,
+        apiAvailable = j['api_available'] as bool?,
+        deviceConnected = j['device_connected'] as bool?,
         deviceId = j['device_id'] as String,
         model = j['model'] as String?,
         transport = j['transport'] as String?;
   final bool connected;
+  final bool? apiAvailable, deviceConnected;
   final String deviceId;
   final String? model, transport;
 }

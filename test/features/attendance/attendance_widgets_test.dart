@@ -84,6 +84,8 @@ void main() {
     await tester.tap(find.text('Guardar parámetros'));
     await tester.pumpAndSettle();
     expect(repository.saves.single['morning_entry_tolerance'], 1);
+    expect(repository.saves.single['valid_from'], '2026-10-01');
+    expect(repository.saves.single['valid_to'], '2026-10-31');
     await tester.pumpWidget(const SizedBox());
     await cubit.close();
     await app.close();

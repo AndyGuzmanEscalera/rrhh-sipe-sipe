@@ -20,6 +20,9 @@ class ApiLogger {
     'refresh_token',
     'authorization',
     'cookie',
+    'set-cookie',
+    'api_key',
+    'client_secret',
   };
 
   static void logSave(String message) {
@@ -42,7 +45,9 @@ class ApiLogger {
       final decoded = jsonDecode(value);
       return jsonEncode(redact(decoded));
     } catch (_) {
-      return value;
+      return value.replaceAll(
+          RegExp(r'Bearer\s+[A-Za-z0-9._~+/-]+=*', caseSensitive: false),
+          'Bearer ***');
     }
   }
 

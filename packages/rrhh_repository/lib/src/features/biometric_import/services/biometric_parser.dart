@@ -44,7 +44,7 @@ class BiometricParser {
       }
       final value = timestamp!;
       records.add(BiometricRecord(
-          employeeIdentifier: fields[0].trim(),
+          employeeIdentifier: fields[0],
           timestamp: value,
           field3: fields[2],
           field4: fields[3],
@@ -52,7 +52,7 @@ class BiometricParser {
           field6: fields[5],
           rawLine: line,
           lineNumber: total));
-      identifiers.add(fields[0].trim());
+      identifiers.add(fields[0]);
       if (min == null || value.isBefore(min)) min = value;
       if (max == null || value.isAfter(max)) max = value;
     }
@@ -92,6 +92,6 @@ class BiometricParser {
         calendar.day != day) {
       return null;
     }
-    return DateTime(year, month, day, hour, minute, second);
+    return calendar;
   }
 }

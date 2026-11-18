@@ -65,6 +65,25 @@ class ApiMethod {
     );
   }
 
+  /// JSON request for endpoints that carry sensitive records.
+  Future<Map<String, dynamic>> requestWithoutBodyLogging(
+    String path, {
+    required String method,
+    required String operation,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+  }) =>
+      _sendJson(
+        tag: operation,
+        logBody: false,
+        send: () => dio.request<dynamic>(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          options: Options(method: method),
+        ),
+      );
+
   /// POST multipart/form-data (e.g. file uploads).
   Future<Map<String, dynamic>> uploadMultipart(
     String path, {
@@ -277,9 +296,10 @@ class ApiMethod {
     required Future<Response<dynamic>> Function() send,
     Object? requestBody,
     bool allowEmptyBody = false,
+    bool logBody = true,
   }) async {
     try {
-      if (requestBody != null) {
+      if (logBody && requestBody != null) {
         ApiLogger.logSave(
           'REQUEST $tag ===> ${ApiLogger.encodePayload(requestBody)} '
           '${DateTime.now()}',
@@ -293,13 +313,13 @@ class ApiMethod {
       final data = response.data;
 
       ApiLogger.logSave(
-        'RESPONSE $tag ===> ${ApiLogger.encodeResponse(data)} ${DateTime.now()}',
+        'RESPONSE $tag ===> ${logBody ? ApiLogger.encodeResponse(data) : code} ${DateTime.now()}',
       );
 
       if (code >= 200 && code < 300) {
         if (data is Map<String, dynamic>) {
           final message = _extractMessage(data);
-          if (message != null && message.isNotEmpty) {
+          if (logBody && message != null && message.isNotEmpty) {
             ApiLogger.logSave('MESSAGE $tag ===> $message ${DateTime.now()}');
           }
           return data;

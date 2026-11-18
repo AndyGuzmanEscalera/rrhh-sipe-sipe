@@ -13,8 +13,6 @@ import 'injection_bloc.dart' show getIt;
 ///     the coordinator).
 ///   * Repositories depend on the api package.
 Future<void> registerRepositories() async {
-  getIt.registerLazySingleton<BiometricImportRepository>(
-      () => const BiometricImportRepository());
   // ─── Core HTTP ─────────────────────────────────────────────────
   getIt.registerLazySingleton<AuthTokenStore>(() => AuthTokenStore());
 
@@ -54,6 +52,10 @@ Future<void> registerRepositories() async {
       () => AttendanceApi(mainApi: getIt<ApiMethod>(instanceName: 'mainApi')));
   getIt.registerLazySingleton<AttendanceRepository>(
       () => AttendanceRepository(api: getIt<AttendanceApi>()));
+  getIt.registerLazySingleton<BiometricImportApi>(() =>
+      BiometricImportApi(mainApi: getIt<ApiMethod>(instanceName: 'mainApi')));
+  getIt.registerLazySingleton<BiometricImportRepository>(
+      () => BiometricImportRepository(api: getIt<BiometricImportApi>()));
   getIt.registerLazySingleton<EmployeesAdminApi>(() =>
       EmployeesAdminApi(mainApi: getIt<ApiMethod>(instanceName: 'mainApi')));
   getIt.registerLazySingleton<OrganizationalUnitsAdminApi>(() =>

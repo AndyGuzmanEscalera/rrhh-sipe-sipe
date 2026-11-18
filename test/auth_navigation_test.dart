@@ -71,9 +71,9 @@ void main() {
               .widget<ListTile>(find.widgetWithText(ListTile, option.label))
               .selected,
           isTrue);
-      if (option.menu == MenuEnum.biometricImport) {
-        expect(find.text('Seleccionar archivo'), findsOneWidget);
-      } else if (option.menu == MenuEnum.employees || option.menu == MenuEnum.attendance) {
+      if (option.menu == MenuEnum.biometricImport ||
+          option.menu == MenuEnum.employees ||
+          option.menu == MenuEnum.attendance) {
         expect(find.text('Acceso restringido'), findsOneWidget);
       } else if (option.menu != MenuEnum.dashboard) {
         expect(find.text('Próximamente'), findsOneWidget);

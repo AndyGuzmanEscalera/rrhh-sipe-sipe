@@ -1,13 +1,73 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rrhh_api/rrhh_api.dart';
 import 'package:rrhh_repository/rrhh_repository.dart';
 
 void main() {
   const parser = BiometricParser();
+  test('Importa TXT a través del contrato HTTP y cuenta filas no vacías',
+      () async {
+    const raw = ' 007\t2026-11-18 07:54:13\t15\t255\tX\t0';
+    final dio = Dio();
+    addTearDown(dio.close);
+    dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+      final data = switch (options.path) {
+        '/rrhh/biometric/devices' => {
+            'items': [
+              {'device_id': 'fixture-clock'}
+            ],
+          },
+        '/rrhh/biometric/import' => {
+            'batch_id': 'fixture-batch',
+            'status': 'completed',
+            'received_records': 2,
+            'new_records': 1,
+            'error_records': 1,
+          },
+        _ => throw StateError('Ruta inesperada'),
+      };
+      if (options.method == 'POST') {
+        expect(options.data, {
+          'device_id': 'fixture-clock',
+          'source_file_name': 'fixture.txt',
+          'received_records': 2,
+          'error_records': 1,
+          'records': [
+            {
+              'user_id': ' 007',
+              'timestamp': '2026-11-18T07:54:13',
+              'status': 15,
+              'punch': 255,
+              'uid': null,
+              'raw_line': raw,
+              'line_number': 1,
+            }
+          ],
+        });
+      }
+      handler.resolve(
+          Response(requestOptions: options, statusCode: 200, data: data));
+    }));
+    final repo = BiometricImportRepository(
+        api: BiometricImportApi(mainApi: ApiMethod(dio: dio)));
+    expect((await repo.devices()).valueOrNull(), ['fixture-clock']);
+    final file =
+        (await repo.readFile(utf8.encode('$raw\n\ninválida'))).valueOrNull()!;
+    final result = await repo.importRecords(
+        deviceId: 'fixture-clock',
+        sourceFileName: 'fixture.txt',
+        mapping: const BiometricColumnMapping(),
+        records: file.records,
+        receivedRecords: file.totalLines - file.ignoredLines,
+        errorRecords: file.errors.length);
+    expect(result.valueOrNull()?.batchId, 'fixture-batch');
+    expect(result.valueOrNull()?.errorRecords, 1);
+  });
   test('CRLF/LF, BOM, duplicados, campos originales y numeración física',
       () async {
-    const first = '4458643\t2026-09-01 06:53:11\t 1 \t0\tX\t';
-    const last = '8056186\t2026-09-02 07:04\t1\t0\t1\t0';
+    const first = '0000007\t2026-09-01 06:53:11\t 1 \t0\tX\t';
+    const last = '0000008\t2026-09-02 07:04\t1\t0\t1\t0';
     final data =
         await parser.parse('\uFEFF$first\r\n\r\n$first\n \t \n$last\n');
     expect(data.totalLines, 5);
@@ -22,13 +82,13 @@ void main() {
     expect(data.records.first.field3, ' 1 ');
     expect(data.records.first.field5, 'X');
     expect(data.records.first.field6, '');
-    expect(data.minTimestamp, DateTime(2026, 9, 1, 6, 53, 11));
-    expect(data.maxTimestamp, DateTime(2026, 9, 2, 7, 4));
+    expect(data.minTimestamp, DateTime.utc(2026, 9, 1, 6, 53, 11));
+    expect(data.maxTimestamp, DateTime.utc(2026, 9, 2, 7, 4));
   });
 
   test('Errores por fila no interrumpen las filas posteriores', () async {
     final lines = [
-      '4458643 2026-09-01 06:53 1 0 1 0',
+      '0000007 2026-09-01 06:53 1 0 1 0',
       '\t2026-09-01 06:53\t1\t0\t1\t0',
       'a\t2026-02-30 06:53\t1\t0\t1\t0',
       'a\t2026-09-01 24:00\t1\t0\t1\t0',
@@ -98,10 +158,55 @@ void main() {
     final valid = await repository
         .readFile(utf8.encode('a\t2026-09-01 06:53\t1\t0\t1\t0'));
     expect(valid.valueOrNull()?.records.length, 1);
-    expect(repository.supportsImport, isFalse);
-    expect(
-        (await repository.importBiometricRecords(valid.valueOrNull()!.records))
-            .isErr,
-        isTrue);
+    // Sin API configurada el envío falla de forma controlada: no simula éxito.
+    final enviado = await repository.importRecords(
+      deviceId: 'test-clock',
+      records: valid.valueOrNull()!.records,
+      mapping: const BiometricColumnMapping(),
+    );
+    expect(enviado.isErr, isTrue);
+  });
+
+  test('El mapeo de columnas copia los valores sin interpretarlos', () {
+    const mapping = BiometricColumnMapping(
+        status: BiometricColumn.field3,
+        punch: BiometricColumn.field4,
+        uid: BiometricColumn.none);
+    final record = BiometricRecord(
+      employeeIdentifier: '0000007',
+      timestamp: DateTime(2026, 11, 18, 7, 54, 13),
+      field3: '15',
+      field4: '255',
+      field5: 'X',
+      field6: '0',
+      rawLine: '0000007\t2026-11-18 07:54:13\t15\t255\tX\t0',
+      lineNumber: 1,
+    );
+    final api = mapping.toApiRecord(record)!;
+    expect(api['user_id'], '0000007');
+    expect(api['timestamp'], '2026-11-18T07:54:13');
+    expect(api['status'], 15);
+    expect(api['punch'], 255);
+    expect(api['uid'], isNull);
+    expect(api['raw_line'], record.rawLine);
+  });
+
+  test('Un campo no numérico invalida la marcación y no se inventa un valor',
+      () {
+    const mapping = BiometricColumnMapping(
+        status: BiometricColumn.field3,
+        punch: BiometricColumn.field4,
+        uid: BiometricColumn.none);
+    final record = BiometricRecord(
+      employeeIdentifier: '0000007',
+      timestamp: DateTime(2026, 11, 18, 7, 54, 13),
+      field3: 'IN',
+      field4: '255',
+      field5: 'X',
+      field6: '0',
+      rawLine: '0000007\t2026-11-18 07:54:13\tIN\t255\tX\t0',
+      lineNumber: 1,
+    );
+    expect(mapping.toApiRecord(record), isNull);
   });
 }

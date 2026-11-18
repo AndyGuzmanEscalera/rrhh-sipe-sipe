@@ -10,6 +10,8 @@ library rrhh_api;
 
 export 'src/features/attendance/api/attendance_api.dart';
 
+export 'src/features/biometric_import/api/biometric_import_api.dart';
+
 export 'src/features/organization/api/employees_admin_api.dart';
 export 'src/features/organization/api/organizational_units_admin_api.dart';
 export 'src/features/organization/api/positions_admin_api.dart';

@@ -19,6 +19,11 @@ class Endpoints {
   static const biometricLatestSync = '/rrhh/biometric/syncs/latest';
   static String biometricSyncStatus(String id) =>
       '/rrhh/biometric/syncs/${Uri.encodeComponent(id)}';
+  // Importación biométrica: archivo, historial de lotes y evidencia en bruto.
+  static const biometricImport = '/rrhh/biometric/import';
+  static const biometricSyncs = '/rrhh/biometric/syncs';
+  static const biometricRecords = '/rrhh/biometric/records';
+  static const biometricDevices = '/rrhh/biometric/devices';
 
   static const adminEmployees = '/admin/employees';
   static String adminEmployee(String id) => '$adminEmployees/$id';

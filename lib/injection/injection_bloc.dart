@@ -28,7 +28,6 @@ void registerCubits() {
   getIt.registerLazySingleton<BiometricFilePicker>(() => BiometricFilePicker());
   getIt.registerFactory<BiometricImportCubit>(() => BiometricImportCubit(
       repository: getIt<BiometricImportRepository>(),
-      analysisRepository: getIt<AttendanceAnalysisRepository>(),
       picker: getIt<BiometricFilePicker>()));
   getIt.registerLazySingleton<AppSessionCubit>(
     () => AppSessionCubit(authRepository: getIt<AuthenticationRepository>()),

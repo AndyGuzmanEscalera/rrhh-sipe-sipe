@@ -8,6 +8,7 @@ import 'package:rrhh_sipe_sipe/injection/get_it.dart';
 
 import '../models/attendance_presentation.dart';
 import '../widgets/attendance_common.dart';
+import 'journal_control.dart';
 
 class EmployeeAttendanceReport extends StatefulWidget {
   const EmployeeAttendanceReport({required this.employeeId, super.key});
@@ -24,6 +25,8 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
   AttendanceReport? _report;
   String? _error;
   bool _loading = false;
+  final _tolerances = List<int>.filled(4, 5);
+  final _times = [const TimeOfDay(hour: 8, minute: 0), const TimeOfDay(hour: 12, minute: 0), const TimeOfDay(hour: 14, minute: 0), const TimeOfDay(hour: 18, minute: 0)];
 
   @override
   void initState() {
@@ -44,10 +47,21 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
       setState(() => _error = 'Seleccione un rango válido de hasta 367 días.');
       return;
     }
+    if (_tolerances.any((value) => value < 0)) {
+      setState(() => _error = 'Las tolerancias deben ser enteros no negativos.'); return;
+    }
     setState(() => _loading = true);
     final format = DateFormat('yyyy-MM-dd');
-    final response = await sl<AttendanceRepository>().reportRange(
-        widget.employeeId, format.format(_from), format.format(_to));
+    if (!(_times[0].hour * 60 + _times[0].minute < _times[1].hour * 60 + _times[1].minute &&
+        _times[1].hour * 60 + _times[1].minute < _times[2].hour * 60 + _times[2].minute &&
+        _times[2].hour * 60 + _times[2].minute < _times[3].hour * 60 + _times[3].minute)) {
+      setState(() => _error = 'La jornada debe mantener el orden Inicio 1, Fin 1, Inicio 2 y Fin 2.'); return;
+    }
+    String clock(TimeOfDay value) => '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+    final response = await sl<AttendanceRepository>().reportRange(widget.employeeId, format.format(_from), format.format(_to), evaluation: {
+      'morning_start': clock(_times[0]), 'morning_end': clock(_times[1]), 'afternoon_start': clock(_times[2]), 'afternoon_end': clock(_times[3]),
+      'morning_start_tolerance': _tolerances[0], 'morning_end_tolerance': _tolerances[1], 'afternoon_start_tolerance': _tolerances[2], 'afternoon_end_tolerance': _tolerances[3],
+    });
     if (!mounted) return;
     setState(() {
       _loading = false;
@@ -126,6 +140,14 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
               OutlinedButton(
                   onPressed: _loading ? null : () => _pick(false),
                   child: Text('Hasta: ${attendanceDate(_to)}')),
+            ]),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (var index = 0; index < 4; index++) JournalControl(
+                label: const ['Inicio 1ra jornada', 'Fin 1ra jornada', 'Inicio 2da jornada', 'Fin 2da jornada'][index],
+                value: _times[index], tolerance: _tolerances[index], disabled: _loading,
+                onTime: () async { final value = await showTimePicker(context: context, initialTime: _times[index], builder: (context, child) => MediaQuery(data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true), child: child!)); if (value != null && mounted) setState(() => _times[index] = value); },
+                onTolerance: (value) { _tolerances[index] = int.tryParse(value) ?? -1; }),
               FilledButton(
                   onPressed: _loading ? null : _load,
                   child: const Text('Consultar')),

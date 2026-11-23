@@ -48,9 +48,10 @@ class AttendanceApi {
     required String employeeId,
     required String from,
     required String to,
+    Map<String, Object?> evaluation = const {},
   }) =>
       _api.requestWithoutBodyLogging(Endpoints.attendanceReport(employeeId),
           method: 'GET',
-          queryParameters: {'date_from': from, 'date_to': to},
+          queryParameters: {'date_from': from, 'date_to': to, ...evaluation},
           operation: 'attendance.reportRange');
 }

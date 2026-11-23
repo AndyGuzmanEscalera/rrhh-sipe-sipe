@@ -58,9 +58,9 @@ class AttendanceRepository {
               month: filter.month)));
 
   Future<Result<AttendanceReport, Failure>> reportRange(
-          String id, String from, String to) =>
+          String id, String from, String to, {Map<String, Object?> evaluation = const {}}) =>
       _read(
           'reportRange',
           () async => AttendanceReport.fromJson(
-              await _api.reportRange(employeeId: id, from: from, to: to)));
+              await _api.reportRange(employeeId: id, from: from, to: to, evaluation: evaluation)));
 }

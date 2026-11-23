@@ -3,6 +3,8 @@ import 'package:rrhh_sipe_sipe/core/theme/app_decorations.dart';
 import 'package:rrhh_sipe_sipe/core/theme/ui_colors.dart';
 import 'package:flutter/material.dart';
 
+import 'official_logo.dart';
+
 class AuthSplitLayout extends StatelessWidget {
   const AuthSplitLayout({
     required this.form,
@@ -184,55 +186,19 @@ class AuthSplitLayout extends StatelessWidget {
   }
 }
 
+/// Identidad institucional del panel, sobre el fondo oscuro del bloque lateral.
+///
+/// Usa el logotipo oficial en blanco: sin ícono de relleno ni ilustración.
 class _LogoMark extends StatelessWidget {
   const _LogoMark();
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
-            borderRadius: AppDecorations.borderRadiusMd,
-            border: Border.all(color: Colors.white24),
-          ),
-          child: const Icon(
-            Icons.account_balance_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'GAM SIPE SIPE',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.4,
-                    ),
-              ),
-              Text(
-                AppIdentity.name,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => const OfficialLogo(white: true, width: 250);
 }
 
+/// Identidad institucional en la vista compacta (móvil), sobre fondo claro.
+///
+/// Escudo oficial a color junto al nombre de la institución y del sistema.
 class _CompactLogoMark extends StatelessWidget {
   const _CompactLogoMark();
 
@@ -241,20 +207,7 @@ class _CompactLogoMark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: UiColors.primary.withOpacity(0.12),
-            borderRadius: AppDecorations.borderRadiusMd,
-            border: Border.all(color: UiColors.primary.withOpacity(0.25)),
-          ),
-          child: const Icon(
-            Icons.account_balance_rounded,
-            color: UiColors.primary,
-            size: 22,
-          ),
-        ),
+        const OfficialLogo(compact: true),
         const SizedBox(width: 12),
         Flexible(
           child: Column(
@@ -262,7 +215,7 @@ class _CompactLogoMark extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'GAM SIPE SIPE',
+                OfficialLogo.institution,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: UiColors.textPrimary,
                       fontWeight: FontWeight.w800,
@@ -271,7 +224,7 @@ class _CompactLogoMark extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const Text(
-                AppIdentity.name,
+                OfficialLogo.system,
                 style: TextStyle(
                   color: UiColors.textSecondary,
                   fontSize: 12,

@@ -5,19 +5,17 @@ import 'package:rrhh_sipe_sipe/core/app/app_identity.dart';
 import '../side_menu/helpers/menu_options.dart';
 import 'package:flutter/material.dart';
 import 'package:rrhh_sipe_sipe/core/theme/ui_colors.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/official_logo.dart';
 
+/// Marca institucional del panel: logotipo oficial en blanco, porque el
+/// sidebar siempre se muestra sobre fondo oscuro.
 class HomeBrandMark extends StatelessWidget {
-  const HomeBrandMark({this.size = 44, super.key});
-  final double size;
+  const HomeBrandMark({this.width = 190, super.key});
+  final double width;
 
   @override
-  Widget build(BuildContext context) => Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-          color: UiColors.primary, borderRadius: BorderRadius.circular(14)),
-      child: Icon(Icons.people_alt_rounded,
-          color: Colors.white, size: size * .55));
+  Widget build(BuildContext context) =>
+      OfficialLogo(white: true, width: width);
 }
 
 class HomeSidebar extends StatelessWidget {
@@ -160,16 +158,8 @@ class HomeWelcome extends StatelessWidget {
         ])),
         if (!compact) ...[
           const SizedBox(width: 20),
-          Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(.08),
-                  border: Border.all(
-                      color: Colors.white.withOpacity(.15), width: 12)),
-              child: const Icon(Icons.diversity_3_outlined,
-                  color: Colors.white, size: 48)),
+          // Escudo oficial en lugar de un ícono decorativo.
+          const OfficialLogo(compact: true, white: true, width: 84),
         ],
       ]));
 }

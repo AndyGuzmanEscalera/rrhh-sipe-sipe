@@ -6,6 +6,7 @@ import 'package:rrhh_sipe_sipe/core/auth/permission_guard.dart';
 import 'package:rrhh_sipe_sipe/core/auth/permissions.dart';
 import 'package:rrhh_sipe_sipe/injection/get_it.dart';
 import 'package:rrhh_sipe_sipe/shared/widgets/app_surface.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/official_logo.dart';
 import '../cubit/attendance_report_cubit.dart';
 import '../models/attendance_presentation.dart';
 import '../widgets/attendance_calendar.dart';
@@ -80,8 +81,14 @@ class _AttendanceReportViewState extends State<AttendanceReportView> {
   Widget _header(AttendanceReport report) => AppSurface(
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text(AppIdentity.institution,
-            style: TextStyle(fontSize: 11, letterSpacing: 1)),
+        const Row(children: [
+          OfficialLogo(compact: true, width: 30),
+          SizedBox(width: 10),
+          Expanded(
+              child: Text(AppIdentity.institution,
+                  style: TextStyle(fontSize: 11, letterSpacing: 1))),
+        ]),
+
         const SizedBox(height: 6),
         Text(report.employee.name,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),

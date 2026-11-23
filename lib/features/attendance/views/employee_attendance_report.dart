@@ -5,6 +5,7 @@ import 'package:rrhh_repository/rrhh_repository.dart';
 import 'package:rrhh_sipe_sipe/core/app/app_identity.dart';
 import 'package:rrhh_sipe_sipe/core/routes.dart';
 import 'package:rrhh_sipe_sipe/injection/get_it.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/official_logo.dart';
 
 import '../models/attendance_presentation.dart';
 import '../widgets/attendance_common.dart';
@@ -117,6 +118,8 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const OfficialLogo(compact: true, width: 44),
+            const SizedBox(height: 10),
             Text(AppIdentity.institution.toUpperCase(),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.labelMedium

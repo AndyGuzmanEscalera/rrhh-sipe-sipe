@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rrhh_sipe_sipe/core/theme/ui_colors.dart';
 import 'package:rrhh_sipe_sipe/features/app/cubit/app_session_cubit.dart';
+import 'package:rrhh_sipe_sipe/shared/widgets/official_logo.dart';
 import '../widgets/home_components.dart';
 
 class MainScreenPage extends StatelessWidget {
@@ -91,6 +92,11 @@ class MainScreenPage extends StatelessWidget {
                             onPressed: () => Scaffold.of(context).openDrawer(),
                             icon: const Icon(Icons.menu_rounded)),
                         const SizedBox(width: 12)
+                      ],
+                      if (desktop) ...[
+                        // Escudo oficial, discreto, junto al título del módulo.
+                        const OfficialLogo(compact: true, width: 30),
+                        const SizedBox(width: 12),
                       ],
                       Expanded(
                           child: Column(

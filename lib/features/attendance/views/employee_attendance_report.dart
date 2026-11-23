@@ -25,6 +25,8 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
   AttendanceReport? _report;
   String? _error;
   bool _loading = false;
+  // Solo visual: los días sin marcación se ocultan, los datos no cambian.
+  bool _showEmptyDays = false;
   final _tolerances = List<int>.filled(4, 5);
   final _times = [const TimeOfDay(hour: 8, minute: 0), const TimeOfDay(hour: 12, minute: 0), const TimeOfDay(hour: 14, minute: 0), const TimeOfDay(hour: 18, minute: 0)];
 
@@ -93,6 +95,11 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
     final report = _report;
     final employee = report?.employee;
     final shifts = report?.configuredShifts ?? const <String>[];
+    // Días sin marcación RAW: se ocultan por defecto y solo cambian la vista.
+    final allDays = report?.days ?? const <ServerAttendanceDay>[];
+    final visibleDays = _showEmptyDays
+        ? allDays
+        : allDays.where((day) => day.records.isNotEmpty).toList(growable: false);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Align(
           alignment: Alignment.centerLeft,
@@ -163,7 +170,14 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
                     'No existen marcaciones biométricas para este funcionario en el período seleccionado.'),
               if (report.pending.isNotEmpty) AttendancePending(report.pending),
               const SizedBox(height: 8),
-              _DailyReportTable(days: report.days),
+              _EmptyDaysToggle(
+                showEmptyDays: _showEmptyDays,
+                visibleDays: visibleDays.length,
+                totalDays: report.days.length,
+                onChanged: (value) => setState(() => _showEmptyDays = value),
+              ),
+              const SizedBox(height: 8),
+              _DailyReportTable(days: visibleDays),
               const SizedBox(height: 16),
               Text('TOTALES DEL PERÍODO',
                   style: theme.textTheme.labelLarge
@@ -233,30 +247,82 @@ class _ReportFields extends StatelessWidget {
   }
 }
 
+/// Control para mostrar u ocultar los días sin marcación RAW.
+///
+/// Es únicamente visual: no altera los datos, la evaluación ni los totales.
+class _EmptyDaysToggle extends StatelessWidget {
+  const _EmptyDaysToggle({
+    required this.showEmptyDays,
+    required this.visibleDays,
+    required this.totalDays,
+    required this.onChanged,
+  });
+
+  final bool showEmptyDays;
+  final int visibleDays;
+  final int totalDays;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: showEmptyDays,
+            onChanged: (value) => onChanged(value ?? false),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Flexible: el rótulo se ajusta al ancho disponible en pantallas compactas.
+        Flexible(
+          child: Text('Mostrar días sin marcación',
+              style: theme.textTheme.bodyMedium),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            '$visibleDays de $totalDays días',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _DailyReportTable extends StatelessWidget {
   const _DailyReportTable({required this.days});
   final List<ServerAttendanceDay> days;
 
   void _showMarks(BuildContext context, ServerAttendanceDay day) {
+    // Solo la hora de cada marcación RAW, en orden cronológico y numerada.
+    // No se interpretan como entrada ni salida.
+    final marks = day.records.toList()
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
               title: Text('Marcaciones · ${attendanceDate(day.date)}'),
               scrollable: true,
               content: SizedBox(
-                  width: 560,
+                  width: 320,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      for (final mark in day.records) ...[
-                        SelectableText(
-                            '${DateFormat('dd/MM/yyyy HH:mm:ss').format(mark.timestamp)}'
-                            '\nstatus_raw: ${mark.status ?? '—'} · punch_raw: ${mark.punch ?? '—'} · uid_raw: ${mark.uid ?? '—'}'
-                            '\nsource: ${mark.source}'
-                            '${mark.sourceFileName == null ? '' : '\nArchivo: ${mark.sourceFileName}'}'
-                            '${mark.importBatchId == null ? '' : '\nLote: ${mark.importBatchId}'}'),
-                        const Divider(),
-                      ],
+                      for (var index = 0; index < marks.length; index++)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: SelectableText(
+                              'Marcación ${index + 1}: '
+                              '${DateFormat('HH:mm:ss').format(marks[index].timestamp)}'),
+                        ),
                     ],
                   )),
               actions: [
@@ -290,7 +356,6 @@ class _DailyReportTable extends StatelessWidget {
               columns: [
                 for (final title in const [
                   'Fecha',
-                  'Turno',
                   'Entrada',
                   'Salida',
                   'Retorno',
@@ -312,7 +377,6 @@ class _DailyReportTable extends StatelessWidget {
                 for (final day in days)
                   DataRow(cells: [
                     DataCell(Text(attendanceDate(day.date))),
-                    DataCell(Text(day.shift ?? '—')),
                     for (final stamp in [
                       day.morningEntry,
                       day.morningExit,

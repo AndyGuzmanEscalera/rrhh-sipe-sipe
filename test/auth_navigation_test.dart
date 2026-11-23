@@ -67,7 +67,8 @@ class _AttendanceRange extends Fake implements AttendanceRepository {
 
   @override
   Future<Result<AttendanceReport, Failure>> reportRange(
-      String id, String from, String to) async {
+      String id, String from, String to,
+      {Map<String, Object?> evaluation = const {}}) async {
     requests.add((id, from, to));
     if (fail) return err(const GenericFailure('Error de consulta de prueba'));
     return ok(AttendanceReport.fromJson({
@@ -128,8 +129,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(marks);
     await tester.pumpAndSettle();
-    expect(find.textContaining('status_raw: 89', findRichText: true),
-        findsWidgets);
+    // Solo la hora de cada marcación, numerada y en orden cronológico.
+    expect(find.text('Marcación 1: 08:10:00'), findsOneWidget);
+    expect(find.text('Marcación 6: 18:15:00'), findsOneWidget);
+    // Sin datos técnicos de la marcación.
+    expect(find.textContaining('status_raw', findRichText: true), findsNothing);
+    expect(find.textContaining('punch_raw', findRichText: true), findsNothing);
+    expect(find.textContaining('uid_raw', findRichText: true), findsNothing);
+    expect(find.textContaining('Lote:', findRichText: true), findsNothing);
     await tester.tap(find.text('Cerrar'));
     await tester.pumpAndSettle();
     final startDate = find.textContaining('Desde:');

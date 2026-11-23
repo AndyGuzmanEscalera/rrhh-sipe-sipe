@@ -78,7 +78,7 @@ La pantalla presenta importación TXT, selección de dispositivo y columnas, pre
 1. Respaldar PostgreSQL de RRHH y verificar que API y worker usan la misma base y el mismo `BIOMETRIC_DEVICE_ID` que el reloj asociado a los archivos.
 2. Pausar el worker y esperar que termine el trabajo activo. Desde el repositorio de la API aplicar `python -m alembic upgrade head` y verificar `python -m alembic current` y `python -m alembic check`.
 3. Desplegar API y worker con la misma revisión. Reiniciar el worker que ejecuta `python -m app.biometric.worker`. Verificar salud, OpenAPI y lectura de dispositivos e historial con las cuentas autorizadas.
-4. Publicar `build/web` con el proxy `/api` apuntando a la API RRHH independiente y el fallback Flutter para `/rrhh/*`. En pruebas de aceptación, importar un archivo sintético dos veces y comprobar los conteos y el detalle. Verificar también los permisos de lectura, gestión y sincronización forzada.
+4. Publicar `build/web` con `API_BASE_URL=https://api-rrhh.sipesipe.gob.bo` y el fallback Flutter para rutas como `/login` e `/importacion`. En pruebas de aceptación, importar un archivo sintético dos veces y comprobar los conteos y el detalle. Verificar también los permisos de lectura, gestión y sincronización forzada.
 
 Una asignación distinta de columnas o de dispositivo cambia la identidad del evento. La cobertura histórica depende de lo que el reloj aún pueda entregar. Los registros previos carecen de detalle de lote cuando su procedencia no fue registrada. La migración bloquea su reversión si detecta historial TXT, errores de fila o metadatos RAW nuevos que esa reversión borraría.
 

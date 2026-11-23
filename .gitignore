@@ -65,3 +65,5 @@ rrhh-diagnostic*.json
 /%SystemDrive%/
 /backend/
 /biometric-reader.zip
+
+.wrangler/

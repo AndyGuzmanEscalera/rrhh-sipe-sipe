@@ -58,22 +58,13 @@ biométrica no disponible, dispositivo desconectado y trabajo fallido/pendiente.
 Coverage incompleta se presenta como configuración pendiente; no implica ausencia.
 Los errores estructurados usan mensajes seguros y los logs ocultan tokens/cookies.
 
-## Flutter Web bajo /rrhh
+## Flutter Web en el dominio independiente
 
-El router ya contiene `/rrhh` y el archivo web conserva el placeholder de Flutter.
-Para evitar duplicar `/rrhh/rrhh`, el build validado es:
+El frontend usa /login para entrar y /home para el inicio. Las secciones protegidas tienen sus propias rutas y el hosting sirve index.html al abrirlas directamente. Los favoritos antiguos se redirigen a las rutas actuales.
 
-```powershell
-flutter build web --release --base-href=/ --dart-define=API_BASE_URL=/api
-```
+    flutter build web --release --base-href=/ --dart-define=API_BASE_URL=https://api-rrhh.sipesipe.gob.bo
 
-`/api` es el ejemplo de la futura fachada RRHH; debe dirigirse al backend RRHH,
-no al backend antiguo. El servidor deberá servir los assets desde el origen raíz
-y resolver rutas profundas `/rrhh/*` al index de este frontend. Este comando no
-resuelve por sí solo un hosting que sirva exclusivamente assets bajo `/rrhh/`.
-Si QA exige ese montaje físico aislado, primero habrá que acordar router/base/proxy
-y comprobar refresh y rutas profundas; no cambiar base-href a ciegas. No se modificó
-el router, index ni configuración QA en esta fase.
+Comprobar acceso directo, recarga, restauración de sesión y navegación con el botón Atrás del navegador.
 
 ## Validación
 

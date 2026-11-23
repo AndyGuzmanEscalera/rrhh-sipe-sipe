@@ -21,7 +21,7 @@ class AppNavigationListener extends StatelessWidget {
           previous.isAuthenticated && !current.isAuthenticated,
       listener: (context, state) {
         final path = router.routeInformationProvider.value.uri.path;
-        if (path == Routes.home) {
+        if (Routes.isWorkspacePath(path)) {
           router.go(Routes.signIn);
         }
       },

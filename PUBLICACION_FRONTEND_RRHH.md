@@ -6,23 +6,13 @@ Este repositorio contiene la aplicación Flutter y sus paquetes locales. El back
 
 `packages/rrhh_api/lib/src/core/network/api_config.dart` recibe `API_BASE_URL` mediante `String.fromEnvironment`. El valor de desarrollo es `http://localhost:8000`; los builds de QA deben especificar `/api` si el frontend y la API comparten origen, o la URL HTTPS real de la API si usan orígenes distintos. No incluir credenciales ni secretos en `--dart-define`: sus valores son públicos en la aplicación web.
 
-## Rutas y publicación posterior en `/rrhh/`
+## Flutter Web en el dominio independiente
 
-Se revisaron `lib/core/routes.dart`, `lib/core/router.dart`, `lib/bootstrap.dart`, `web/index.html` y el código de `PathUrlStrategy` del SDK instalado. Las rutas actuales son `/`, `/rrhh`, `/rrhh/login` y `/rrhh/home`; `setPathUrlStrategy()` está activo. El HTML mantiene el placeholder original `$FLUTTER_BASE_HREF`.
+El acceso canónico es `https://rrhh.sipesipe.gob.bo/login`. El inicio usa `/home`. Las secciones protegidas tienen sus propias rutas y el hosting sirve `index.html` al abrirlas directamente. Los favoritos antiguos se redirigen a las rutas actuales.
 
-`PathUrlStrategy` elimina el base path al interpretar URLs y lo antepone al publicar rutas internas. Con estas rutas, `--base-href=/rrhh/` puede transformar `/rrhh/home` en `/rrhh/rrhh/home`; al abrir `/rrhh/home`, el router recibiría `/home`, que no está declarado. No combinar ambas configuraciones.
+    flutter build web --release --base-href=/ --dart-define=API_BASE_URL=https://api-rrhh.sipesipe.gob.bo
 
-Comando compatible con las rutas **actuales**, sin modificarlas:
-
-```bash
-flutter build web --release --base-href=/ --dart-define=API_BASE_URL=/api
-```
-
-Este comando conserva las URLs `/rrhh/login` y `/rrhh/home`. **No basta por sí solo para alojar todos los archivos exclusivamente bajo `/rrhh/`**: con base `/`, el navegador pide bootstrap, JavaScript y otros recursos desde la raíz del dominio. Antes de desplegar, el responsable de QA debe resolver ese mapeo estático y el fallback SPA de `/rrhh`, `/rrhh/` y `/rrhh/*` al HTML de RRHH, sin capturar `/api` ni rutas de otras aplicaciones.
-
-Si Correspondencia ya ocupa la raíz, publicar recursos RRHH con los mismos nombres puede interferir con ella. En ese escenario no existe un flag de build que resuelva simultáneamente el aislamiento de recursos y el prefijo que ya contiene el router. Habrá que aprobar una configuración coherente de subruta (por ejemplo, rutas internas sin `/rrhh` junto con base `/rrhh/`) o una estrategia explícita de carga de recursos. Esa decisión funcional/de servidor queda para la preparación del despliegue; esta entrega conserva router, bootstrap y base href fuente.
-
-No se ha configurado Apache ni publicado un build en QA. Antes de desplegar validar en navegador las rutas iniciales, login, sesión restaurada, F5 en `/rrhh/home`, recursos estáticos, navegación atrás y acceso a API por HTTPS.
+Comprobar acceso directo, recarga, restauración de sesión y navegación con el botón Atrás del navegador.
 
 ## Validaciones
 

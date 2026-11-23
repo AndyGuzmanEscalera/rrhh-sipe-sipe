@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../side_menu/cubit/side_menu_cubit.dart';
 import 'package:rrhh_sipe_sipe/core/app/app_identity.dart';
 import '../side_menu/helpers/menu_options.dart';
@@ -75,10 +76,9 @@ class HomeSidebar extends StatelessWidget {
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600)),
                                   onTap: () {
+                                    final router = GoRouter.of(context);
                                     if (inDrawer) Navigator.pop(context);
-                                    context
-                                        .read<SideMenuCubit>()
-                                        .select(option);
+                                    router.go(option.path);
                                   })))),
                       const SizedBox(height: 16),
                       TextButton.icon(

@@ -38,7 +38,7 @@ Ver [MIGRACION_BASE_COMUN.md](MIGRACION_BASE_COMUN.md) para el inventario, exclu
 ## Estructura visual de Recursos Humanos
 
 - core/app/app_identity.dart: nombre e institución.
-- core/router.dart y core/routes.dart: acceso y una única pantalla principal protegida por sesión en /rrhh/home.
+- core/router.dart y core/routes.dart: acceso y una única pantalla principal protegida por sesión en /home. Login en /login y secciones en /importacion, /asistencia, /funcionarios, /reportes y /configuracion.
 - features/home: estructura responsive, menú lateral y menú móvil. SideMenuCubit selecciona el módulo y MainScreenPage cambia el contenido dentro de la pantalla principal, como en Correspondencia, sin abrir rutas por módulo.
 - features/dashboard/views: indicadores temporales.
 - features/biometric_import/views: base de Importar Biométrico.

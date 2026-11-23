@@ -43,4 +43,14 @@ class AttendanceApi {
             'month': month
           },
           operation: 'attendance.report');
+
+  Future<Map<String, dynamic>> reportRange({
+    required String employeeId,
+    required String from,
+    required String to,
+  }) =>
+      _api.requestWithoutBodyLogging(Endpoints.attendanceReport(employeeId),
+          method: 'GET',
+          queryParameters: {'date_from': from, 'date_to': to},
+          operation: 'attendance.reportRange');
 }

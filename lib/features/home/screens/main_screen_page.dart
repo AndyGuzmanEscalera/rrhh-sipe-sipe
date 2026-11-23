@@ -14,7 +14,8 @@ import 'package:rrhh_sipe_sipe/features/app/cubit/app_session_cubit.dart';
 import '../widgets/home_components.dart';
 
 class MainScreenPage extends StatelessWidget {
-  const MainScreenPage({super.key});
+  const MainScreenPage({this.attendanceEmployeeId, super.key});
+  final String? attendanceEmployeeId;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +135,9 @@ class MainScreenPage extends StatelessWidget {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _ContentArea(menu: selected.menu),
+                                _ContentArea(
+                                    menu: selected.menu,
+                                    attendanceEmployeeId: attendanceEmployeeId),
                                 const SizedBox(height: 32),
                                 const Text(AppIdentity.institution,
                                     style: TextStyle(
@@ -150,15 +153,16 @@ class MainScreenPage extends StatelessWidget {
 }
 
 class _ContentArea extends StatelessWidget {
-  const _ContentArea({required this.menu});
+  const _ContentArea({required this.menu, this.attendanceEmployeeId});
 
   final MenuEnum menu;
+  final String? attendanceEmployeeId;
 
   @override
   Widget build(BuildContext context) => switch (menu) {
         MenuEnum.dashboard => const DashboardPage(),
         MenuEnum.biometricImport => const BiometricImportPage(),
-        MenuEnum.attendance => const AttendancePage(),
+        MenuEnum.attendance => AttendancePage(employeeId: attendanceEmployeeId),
         MenuEnum.employees => const EmployeesPage(),
         MenuEnum.reports => const ReportsPage(),
         MenuEnum.settings => const SettingsPage(),

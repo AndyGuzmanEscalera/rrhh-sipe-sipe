@@ -178,10 +178,14 @@ class AttendanceMark {
         recordId = j['record_id'] as String,
         status = j['status'] as int?,
         punch = j['punch'] as int?,
+        uid = j['uid'] as int?,
+        sourceFileName = j['source_file_name'] as String?,
+        importBatchId = j['import_batch_id'] as String?,
         source = j['source'] as String;
   final DateTime timestamp;
   final String recordId, source;
-  final int? status, punch;
+  final int? status, punch, uid;
+  final String? sourceFileName, importBatchId;
 }
 
 class ServerAttendanceSuggestion {
@@ -290,6 +294,8 @@ class AttendanceReport {
         currentShift = j['current_shift'] == null
             ? null
             : (j['current_shift'] as Map)['name'] as String?,
+        configuredShifts =
+            List.unmodifiable(_strings(j['configured_shift_names'])),
         pending = List.unmodifiable(_strings(j['pending_configuration'])),
         pendingPolicies = List.unmodifiable(_strings(j['pending_policies'])),
         days = List.unmodifiable(
@@ -300,7 +306,7 @@ class AttendanceReport {
   final AttendanceEmployee employee;
   final AttendancePeriod? period;
   final AttendanceSummary? summary;
-  final List<String> shifts, pending, pendingPolicies;
+  final List<String> shifts, configuredShifts, pending, pendingPolicies;
   final String? currentShift;
   final List<ServerAttendanceDay> days;
   final List<ServerAttendanceCalendarDay> calendar;

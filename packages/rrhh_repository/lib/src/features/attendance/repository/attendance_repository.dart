@@ -56,4 +56,11 @@ class AttendanceRepository {
               contractId: filter.contractId,
               year: filter.year,
               month: filter.month)));
+
+  Future<Result<AttendanceReport, Failure>> reportRange(
+          String id, String from, String to) =>
+      _read(
+          'reportRange',
+          () async => AttendanceReport.fromJson(
+              await _api.reportRange(employeeId: id, from: from, to: to)));
 }

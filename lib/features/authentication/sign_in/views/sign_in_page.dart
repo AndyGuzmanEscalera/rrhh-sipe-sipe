@@ -51,7 +51,9 @@ class SignInView extends StatelessWidget {
             final user = state.userSession;
             if (user != null) {
               appSession.onSignedIn(user);
-              context.go(Routes.home);
+              final next =
+                  GoRouterState.of(context).uri.queryParameters['next'];
+              context.go(Routes.isWorkspacePath(next) ? next! : Routes.home);
             }
           },
         ),

@@ -26,6 +26,20 @@ class _Adapter implements HttpClientAdapter {
 }
 
 void main() {
+  test('Reporte por rango usa solo GET y las fechas inclusivas', () async {
+    final adapter = _Adapter();
+    final dio = Dio()..httpClientAdapter = adapter;
+    addTearDown(dio.close);
+    final api = AttendanceApi(mainApi: ApiMethod(dio: dio));
+    await api.reportRange(
+        employeeId: 'fixture', from: '2026-10-01', to: '2026-11-30');
+    final call = adapter.calls.single;
+    expect(call.method, 'GET');
+    expect(call.path, '/rrhh/attendance/employees/fixture/report');
+    expect(call.queryParameters,
+        {'date_from': '2026-10-01', 'date_to': '2026-11-30'});
+  });
+
   test(
       'Generación y detalle usan contratos reales de API sin sincronización implícita',
       () async {

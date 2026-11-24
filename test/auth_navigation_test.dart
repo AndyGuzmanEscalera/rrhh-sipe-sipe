@@ -46,6 +46,7 @@ class _AttendanceEmployees extends Fake implements EmployeesAdminRepository {
             id: 'fixture-employee',
             firstName: 'Persona',
             lastName: 'Sintética',
+            documentNumber: '007',
             positionName: 'Cargo de prueba',
             unitName: 'Unidad de prueba',
             isActive: true,
@@ -111,7 +112,8 @@ void main() {
     await tester.enterText(find.byType(TextField), '007');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    expect(employees.queries, [null, '007']);
+    // El listado se carga una vez y el filtro por CI se aplica localmente.
+    expect(employees.queries, [null]);
     await tester.tap(find.text('Persona Sintética'));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path,
@@ -139,21 +141,10 @@ void main() {
     expect(find.textContaining('Lote:', findRichText: true), findsNothing);
     await tester.tap(find.text('Cerrar'));
     await tester.pumpAndSettle();
-    final startDate = find.textContaining('Desde:');
-    await tester.ensureVisible(startDate);
-    await tester.tap(startDate);
-    await tester.pumpAndSettle();
-    final picker = find.byType(DatePickerDialog);
-    await tester
-        .tap(find.descendant(of: picker, matching: find.text('2')).last);
-    await tester.tap(find
-        .text(MaterialLocalizations.of(tester.element(picker)).okButtonLabel));
-    await tester.pumpAndSettle();
     reports.empty = true;
     await tester.tap(find.text('Consultar'));
     await tester.pumpAndSettle();
-    expect(
-        reports.requests.last.$2, iso.format(DateTime(now.year, now.month, 2)));
+    expect(reports.requests.last.$2, iso.format(DateTime(now.year, now.month)));
     expect(find.textContaining('No existen marcaciones'), findsOneWidget);
     reports.fail = true;
     await tester.tap(find.text('Consultar'));

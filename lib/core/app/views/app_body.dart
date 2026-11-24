@@ -3,6 +3,7 @@ import 'package:rrhh_sipe_sipe/core/app/widgets/app_navigation_listener.dart';
 import 'package:rrhh_sipe_sipe/core/router.dart';
 import 'package:rrhh_sipe_sipe/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 
 /// Root [MaterialApp.router] — patrón Inventario (`MainAppBody`).
@@ -15,6 +16,13 @@ class AppBody extends StatelessWidget {
       title: AppIdentity.name,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      locale: const Locale('es', 'BO'),
+      supportedLocales: const [Locale('es', 'BO'), Locale('es')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: router,
       builder: (context, child) {
         return ResponsiveBreakpoints.builder(

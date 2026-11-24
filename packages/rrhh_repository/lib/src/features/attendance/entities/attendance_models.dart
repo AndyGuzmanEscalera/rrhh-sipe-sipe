@@ -280,6 +280,7 @@ class ServerAttendanceCalendarDay {
 class AttendanceReport {
   AttendanceReport.fromJson(AttendanceJson j)
       : ready = j['ready'] == true,
+        singleShift = j['single_shift'] == true,
         periodConfirmed = j['period_confirmed'] == true,
         employee = AttendanceEmployee.fromJson(
             Map<String, dynamic>.from(j['employee'] as Map)),
@@ -304,7 +305,7 @@ class AttendanceReport {
             _rows(j['days']).map(ServerAttendanceDay.fromJson)),
         calendar = List.unmodifiable(
             _rows(j['calendar']).map(ServerAttendanceCalendarDay.fromJson));
-  final bool ready, periodConfirmed;
+  final bool ready, singleShift, periodConfirmed;
   final AttendanceEmployee employee;
   final AttendancePeriod? period;
   final AttendanceSummary? summary;

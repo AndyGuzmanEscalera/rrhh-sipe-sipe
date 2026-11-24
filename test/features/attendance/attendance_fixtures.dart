@@ -149,8 +149,10 @@ Map<String, dynamic> dayJson(
               }
             ],
     };
-Map<String, dynamic> reportJson({bool ready = true, bool empty = false}) => {
+Map<String, dynamic> reportJson(
+        {bool ready = true, bool empty = false, bool singleShift = false}) => {
       'ready': ready,
+      'single_shift': singleShift,
       'period_confirmed': ready,
       'employee': employeeJson(),
       'period': {'start_date': '2026-10-01', 'end_exclusive': '2026-10-03'},

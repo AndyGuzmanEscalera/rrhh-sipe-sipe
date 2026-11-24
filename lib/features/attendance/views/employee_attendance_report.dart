@@ -28,8 +28,14 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
   bool _loading = false;
   // Solo visual: los días sin marcación se ocultan, los datos no cambian.
   bool _showEmptyDays = false;
+  bool _singleShift = false;
   final _tolerances = List<int>.filled(4, 5);
-  final _times = [const TimeOfDay(hour: 8, minute: 0), const TimeOfDay(hour: 12, minute: 0), const TimeOfDay(hour: 14, minute: 0), const TimeOfDay(hour: 18, minute: 0)];
+  final _times = [
+    const TimeOfDay(hour: 8, minute: 0),
+    const TimeOfDay(hour: 12, minute: 0),
+    const TimeOfDay(hour: 14, minute: 0),
+    const TimeOfDay(hour: 18, minute: 0)
+  ];
 
   @override
   void initState() {
@@ -50,21 +56,43 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
       setState(() => _error = 'Seleccione un rango válido de hasta 367 días.');
       return;
     }
-    if (_tolerances.any((value) => value < 0)) {
-      setState(() => _error = 'Las tolerancias deben ser enteros no negativos.'); return;
+    if (_tolerances.take(_singleShift ? 2 : 4).any((value) => value < 0)) {
+      setState(
+          () => _error = 'Las tolerancias deben ser enteros no negativos.');
+      return;
+    }
+    final format = DateFormat('yyyy-MM-dd');
+    final first = _times[0].hour * 60 + _times[0].minute;
+    final second = _times[1].hour * 60 + _times[1].minute;
+    final third = _times[2].hour * 60 + _times[2].minute;
+    final fourth = _times[3].hour * 60 + _times[3].minute;
+    if (_singleShift
+        ? first >= second
+        : !(first < second && second < third && third < fourth)) {
+      setState(() => _error = _singleShift
+          ? 'La hora de salida debe ser posterior a la hora de entrada.'
+          : 'La jornada debe mantener el orden de entrada y salida.');
+      return;
     }
     setState(() => _loading = true);
-    final format = DateFormat('yyyy-MM-dd');
-    if (!(_times[0].hour * 60 + _times[0].minute < _times[1].hour * 60 + _times[1].minute &&
-        _times[1].hour * 60 + _times[1].minute < _times[2].hour * 60 + _times[2].minute &&
-        _times[2].hour * 60 + _times[2].minute < _times[3].hour * 60 + _times[3].minute)) {
-      setState(() => _error = 'La jornada debe mantener el orden Inicio 1, Fin 1, Inicio 2 y Fin 2.'); return;
-    }
-    String clock(TimeOfDay value) => '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-    final response = await sl<AttendanceRepository>().reportRange(widget.employeeId, format.format(_from), format.format(_to), evaluation: {
-      'morning_start': clock(_times[0]), 'morning_end': clock(_times[1]), 'afternoon_start': clock(_times[2]), 'afternoon_end': clock(_times[3]),
-      'morning_start_tolerance': _tolerances[0], 'morning_end_tolerance': _tolerances[1], 'afternoon_start_tolerance': _tolerances[2], 'afternoon_end_tolerance': _tolerances[3],
-    });
+    String clock(TimeOfDay value) =>
+        '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+    final evaluation = <String, Object?>{
+      'single_shift': _singleShift,
+      'morning_start': clock(_times[0]),
+      'morning_end': clock(_times[1]),
+      'morning_start_tolerance': _tolerances[0],
+      'morning_end_tolerance': _tolerances[1],
+      if (!_singleShift) ...{
+        'afternoon_start': clock(_times[2]),
+        'afternoon_end': clock(_times[3]),
+        'afternoon_start_tolerance': _tolerances[2],
+        'afternoon_end_tolerance': _tolerances[3],
+      },
+    };
+    final response = await sl<AttendanceRepository>().reportRange(
+        widget.employeeId, format.format(_from), format.format(_to),
+        evaluation: evaluation);
     if (!mounted) return;
     setState(() {
       _loading = false;
@@ -74,21 +102,55 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
     });
   }
 
-  Future<void> _pick(bool start) async {
-    final value = await showDatePicker(
+  Future<void> _pickRange() async {
+    final value = await showDateRangePicker(
         context: context,
-        initialDate: start ? _from : _to,
+        initialDateRange: DateTimeRange(start: _from, end: _to),
         firstDate: DateTime(1901),
-        lastDate: DateTime(9998, 12, 31));
+        lastDate: DateTime(9998, 12, 31),
+        locale: const Locale('es', 'BO'),
+        helpText: 'Periodo de consulta',
+        cancelText: 'Cancelar',
+        confirmText: 'Aplicar',
+        saveText: 'Aplicar');
     if (!mounted || value == null) return;
     setState(() {
-      if (start) {
-        _from = value;
-      } else {
-        _to = value;
-      }
+      _from = value.start;
+      _to = value.end;
     });
   }
+
+  Future<void> _pickTime(int index) async {
+    final value = await showTimePicker(
+        context: context,
+        initialTime: _times[index],
+        builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!));
+    if (value != null && mounted) setState(() => _times[index] = value);
+  }
+
+  Widget _scheduleControls(List<int> indexes) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final index in indexes)
+            JournalControl(
+              key:
+                  ValueKey('journal-${_singleShift ? 'single' : 'two'}-$index'),
+              label: _singleShift
+                  ? const ['Hora de entrada', 'Hora de salida'][index]
+                  : const ['Hora de entrada', 'Hora de salida'][index % 2],
+              value: _times[index],
+              tolerance: _tolerances[index],
+              disabled: _loading,
+              onTime: () => _pickTime(index),
+              onTolerance: (value) => setState(() {
+                _tolerances[index] = int.tryParse(value) ?? -1;
+              }),
+            ),
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +162,9 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
     final allDays = report?.days ?? const <ServerAttendanceDay>[];
     final visibleDays = _showEmptyDays
         ? allDays
-        : allDays.where((day) => day.records.isNotEmpty).toList(growable: false);
+        : allDays
+            .where((day) => day.records.isNotEmpty)
+            .toList(growable: false);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Align(
           alignment: Alignment.centerLeft,
@@ -143,25 +207,78 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
               ]),
               const SizedBox(height: 12),
             ],
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              OutlinedButton(
-                  onPressed: _loading ? null : () => _pick(true),
-                  child: Text('Desde: ${attendanceDate(_from)}')),
-              OutlinedButton(
-                  onPressed: _loading ? null : () => _pick(false),
-                  child: Text('Hasta: ${attendanceDate(_to)}')),
-            ]),
+            SizedBox(
+              width: 360,
+              child: InkWell(
+                key: const ValueKey('attendance-date-range'),
+                onTap: _loading ? null : _pickRange,
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Periodo de consulta',
+                    prefixIcon: Icon(Icons.date_range),
+                    border: OutlineInputBorder(),
+                  ),
+                  child: Text(
+                    '${DateFormat('dd/MM/yyyy', 'es_BO').format(_from)} — '
+                    '${DateFormat('dd/MM/yyyy', 'es_BO').format(_to)}',
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              key: const ValueKey('single-shift-toggle'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Una sola jornada'),
+              value: _singleShift,
+              onChanged: _loading
+                  ? null
+                  : (value) => setState(() => _singleShift = value ?? false),
+            ),
+            const SizedBox(height: 4),
+            Text('Horario de trabajo',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (var index = 0; index < 4; index++) JournalControl(
-                label: const ['Inicio 1ra jornada', 'Fin 1ra jornada', 'Inicio 2da jornada', 'Fin 2da jornada'][index],
-                value: _times[index], tolerance: _tolerances[index], disabled: _loading,
-                onTime: () async { final value = await showTimePicker(context: context, initialTime: _times[index], builder: (context, child) => MediaQuery(data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true), child: child!)); if (value != null && mounted) setState(() => _times[index] = value); },
-                onTolerance: (value) { _tolerances[index] = int.tryParse(value) ?? -1; }),
-              FilledButton(
-                  onPressed: _loading ? null : _load,
-                  child: const Text('Consultar')),
-            ]),
+            if (_singleShift)
+              _scheduleControls(const [0, 1])
+            else
+              LayoutBuilder(builder: (context, constraints) {
+                final groups = [
+                  ('Primera jornada', const [0, 1]),
+                  ('Segunda jornada', const [2, 3]),
+                ];
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    for (final (label, indexes) in groups)
+                      SizedBox(
+                        width: constraints.maxWidth >= 1050
+                            ? (constraints.maxWidth - 16) / 2
+                            : constraints.maxWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(label.toUpperCase(),
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.colorScheme.primary)),
+                            const SizedBox(height: 5),
+                            _scheduleControls(indexes),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              }),
+            const SizedBox(height: 10),
+            FilledButton.icon(
+                onPressed: _loading ? null : _load,
+                icon: const Icon(Icons.search),
+                label: const Text('Consultar')),
             const SizedBox(height: 12),
             if (_loading)
               const LinearProgressIndicator()
@@ -180,7 +297,8 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
                 onChanged: (value) => setState(() => _showEmptyDays = value),
               ),
               const SizedBox(height: 8),
-              _DailyReportTable(days: visibleDays),
+              _DailyReportTable(
+                  days: visibleDays, singleShift: report.singleShift),
               const SizedBox(height: 16),
               Text('TOTALES DEL PERÍODO',
                   style: theme.textTheme.labelLarge
@@ -202,8 +320,14 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
                   'Salidas anticipadas (min)',
                   attendanceMinutes(report.summary?.earlyMinutes)
                 ),
-                ('Ausencia (min)', attendanceMinutes(report.summary?.absenceMinutes)),
-                ('Horas extra (min)', attendanceMinutes(report.summary?.overtimeMinutes)),
+                (
+                  'Ausencia (min)',
+                  attendanceMinutes(report.summary?.absenceMinutes)
+                ),
+                (
+                  'Horas extra (min)',
+                  attendanceMinutes(report.summary?.overtimeMinutes)
+                ),
               ]),
             ],
           ]),
@@ -300,8 +424,9 @@ class _EmptyDaysToggle extends StatelessWidget {
 }
 
 class _DailyReportTable extends StatelessWidget {
-  const _DailyReportTable({required this.days});
+  const _DailyReportTable({required this.days, required this.singleShift});
   final List<ServerAttendanceDay> days;
+  final bool singleShift;
 
   void _showMarks(BuildContext context, ServerAttendanceDay day) {
     // Solo la hora de cada marcación RAW, en orden cronológico y numerada.
@@ -322,8 +447,7 @@ class _DailyReportTable extends StatelessWidget {
                       for (var index = 0; index < marks.length; index++)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: SelectableText(
-                              'Marcación ${index + 1}: '
+                          child: SelectableText('Marcación ${index + 1}: '
                               '${DateFormat('HH:mm:ss').format(marks[index].timestamp)}'),
                         ),
                     ],
@@ -357,19 +481,24 @@ class _DailyReportTable extends StatelessWidget {
               columnSpacing: 12,
               horizontalMargin: 8,
               columns: [
-                for (final title in const [
+                for (final title in [
                   'Fecha',
-                  'Entrada',
-                  'Salida',
-                  'Retorno',
-                  'Salida final',
-                  'Marcaciones',
+                  if (singleShift) ...[
+                    'Entrada',
+                    'Salida'
+                  ] else ...[
+                    'Entrada 1ra jornada',
+                    'Salida 1ra jornada',
+                    'Entrada 2da jornada',
+                    'Salida 2da jornada',
+                  ],
                   'Atraso (min)',
                   'Salida anticipada (min)',
                   'Ausencia (min)',
                   'Horas extra (min)',
-                  'Justificación / observación',
+                  'Marcaciones',
                   'Estado',
+                  'Observaciones',
                   'Evidencia',
                 ])
                   DataColumn(
@@ -381,12 +510,14 @@ class _DailyReportTable extends StatelessWidget {
                 for (final day in days)
                   DataRow(cells: [
                     DataCell(Text(attendanceDate(day.date))),
-                    for (final stamp in [
-                      day.morningEntry,
-                      day.morningExit,
-                      day.afternoonEntry,
-                      day.finalExit
-                    ])
+                    for (final stamp in singleShift
+                        ? [day.morningEntry, day.finalExit]
+                        : [
+                            day.morningEntry,
+                            day.morningExit,
+                            day.afternoonEntry,
+                            day.finalExit
+                          ])
                       DataCell(Text(attendanceTime(stamp))),
                     DataCell(Text('${day.records.length}')),
                     for (final minutes in [
@@ -398,8 +529,16 @@ class _DailyReportTable extends StatelessWidget {
                       DataCell(Text(attendanceMinutes(minutes))),
                     DataCell(day.incidents.isEmpty
                         ? const Text('—')
-                        : Tooltip(message: day.incidents.map((incident) => incident.description).join('\n'),
-                            child: Text(day.incidents.map((incident) => incident.description).join('; '), maxLines: 2, overflow: TextOverflow.ellipsis))),
+                        : Tooltip(
+                            message: day.incidents
+                                .map((incident) => incident.description)
+                                .join('\n'),
+                            child: Text(
+                                day.incidents
+                                    .map((incident) => incident.description)
+                                    .join('; '),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis))),
                     DataCell(AttendanceStatusBadge(day.status)),
                     DataCell(day.records.isEmpty
                         ? const Text('—')

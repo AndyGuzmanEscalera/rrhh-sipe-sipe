@@ -202,8 +202,8 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
                   'Salidas anticipadas (min)',
                   attendanceMinutes(report.summary?.earlyMinutes)
                 ),
-                ('Ausencia (min)', '—'),
-                ('Horas extra (min)', '—'),
+                ('Ausencia (min)', attendanceMinutes(report.summary?.absenceMinutes)),
+                ('Horas extra (min)', attendanceMinutes(report.summary?.overtimeMinutes)),
               ]),
             ],
           ]),
@@ -363,6 +363,7 @@ class _DailyReportTable extends StatelessWidget {
                   'Salida',
                   'Retorno',
                   'Salida final',
+                  'Marcaciones',
                   'Atraso (min)',
                   'Salida anticipada (min)',
                   'Ausencia (min)',
@@ -387,6 +388,7 @@ class _DailyReportTable extends StatelessWidget {
                       day.finalExit
                     ])
                       DataCell(Text(attendanceTime(stamp))),
+                    DataCell(Text('${day.records.length}')),
                     for (final minutes in [
                       day.lateMinutes,
                       day.earlyMinutes,
@@ -396,12 +398,8 @@ class _DailyReportTable extends StatelessWidget {
                       DataCell(Text(attendanceMinutes(minutes))),
                     DataCell(day.incidents.isEmpty
                         ? const Text('—')
-                        : Tooltip(
-                            message: day.incidents
-                                .map((incident) => incident.description)
-                                .join('\n'),
-                            child:
-                                Text('${day.incidents.length} incidencias'))),
+                        : Tooltip(message: day.incidents.map((incident) => incident.description).join('\n'),
+                            child: Text(day.incidents.map((incident) => incident.description).join('; '), maxLines: 2, overflow: TextOverflow.ellipsis))),
                     DataCell(AttendanceStatusBadge(day.status)),
                     DataCell(day.records.isEmpty
                         ? const Text('—')

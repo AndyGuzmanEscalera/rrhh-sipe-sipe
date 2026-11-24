@@ -27,6 +27,4 @@ const menuOptions = [
       Icons.upload_file_outlined),
   MenuOption('Asistencia', MenuEnum.attendance, Icons.fact_check_outlined),
   MenuOption('Funcionarios', MenuEnum.employees, Icons.people_outline_rounded),
-  MenuOption('Reportes', MenuEnum.reports, Icons.bar_chart_rounded),
-  MenuOption('Configuración', MenuEnum.settings, Icons.settings_outlined),
 ];

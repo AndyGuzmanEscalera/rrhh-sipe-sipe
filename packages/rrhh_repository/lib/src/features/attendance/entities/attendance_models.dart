@@ -121,6 +121,8 @@ class AttendanceSummary {
         lateMinutes = _number(j['total_late_minutes']),
         earlyMinutes = _number(j['total_early_exit_minutes']),
         grossEarlyMinutes = _number(j['total_gross_early_exit_minutes']),
+        absenceMinutes = _number(j['total_absence_minutes']),
+        overtimeMinutes = _number(j['total_overtime_minutes']),
         totalsComplete = j['totals_complete'] == true;
   final int evaluated,
       normal,
@@ -129,7 +131,7 @@ class AttendanceSummary {
       noData,
       records,
       incidents;
-  final double? lateMinutes, earlyMinutes, grossEarlyMinutes;
+  final double? lateMinutes, earlyMinutes, grossEarlyMinutes, absenceMinutes, overtimeMinutes;
   final bool totalsComplete;
 }
 

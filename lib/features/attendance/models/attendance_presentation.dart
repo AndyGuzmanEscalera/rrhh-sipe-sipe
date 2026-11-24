@@ -33,6 +33,7 @@ String attendanceStatusLabel(String status) =>
       'OBSERVATION': 'Observación',
       'ANOMALY': 'Anomalía',
       'NO_DATA': 'Sin datos'
+      ,'IN_PROGRESS': 'En curso'
     }[status] ??
     'Sin clasificar';
 Color attendanceStatusColor(String status) => switch (status) {
@@ -77,5 +78,7 @@ String attendanceIncidentLabel(String key) =>
       'INTERMEDIATE_EXIT': 'Posible salida intermedia',
       'MINIMUM_BREAK_VIOLATION': 'Intervalo menor al mínimo',
       'INCONSISTENT_SEQUENCE': 'Secuencia por revisar',
+      'ABSENCE': 'Posible ausencia durante la jornada',
+      'MULTIPLE_MARKS': 'Marcaciones adicionales en salida',
     }[key] ??
     key;

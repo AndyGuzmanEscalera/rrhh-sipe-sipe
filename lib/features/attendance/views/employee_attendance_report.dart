@@ -130,26 +130,30 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
     if (value != null && mounted) setState(() => _times[index] = value);
   }
 
-  Widget _scheduleControls(List<int> indexes) => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final index in indexes)
-            JournalControl(
-              key:
-                  ValueKey('journal-${_singleShift ? 'single' : 'two'}-$index'),
-              label: _singleShift
-                  ? const ['Hora de entrada', 'Hora de salida'][index]
-                  : const ['Hora de entrada', 'Hora de salida'][index % 2],
-              value: _times[index],
-              tolerance: _tolerances[index],
-              disabled: _loading,
-              onTime: () => _pickTime(index),
-              onTolerance: (value) => setState(() {
-                _tolerances[index] = int.tryParse(value) ?? -1;
-              }),
-            ),
-        ],
+  Widget _scheduleControls(List<int> indexes) => LayoutBuilder(
+        builder: (context, constraints) {
+          final controlWidth = (constraints.maxWidth - 8) / 2;
+          return Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              for (final index in indexes)
+                JournalControl(
+                  key: ValueKey(
+                      'journal-${_singleShift ? 'single' : 'two'}-$index'),
+                  width: controlWidth,
+                  label: const ['Entrada', 'Salida'][index % 2],
+                  value: _times[index],
+                  tolerance: _tolerances[index],
+                  disabled: _loading,
+                  onTime: () => _pickTime(index),
+                  onTolerance: (value) => setState(() {
+                    _tolerances[index] = int.tryParse(value) ?? -1;
+                  }),
+                ),
+            ],
+          );
+        },
       );
 
   @override
@@ -165,175 +169,200 @@ class _EmployeeAttendanceReportState extends State<EmployeeAttendanceReport> {
         : allDays
             .where((day) => day.records.isNotEmpty)
             .toList(growable: false);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-              onPressed: () => context.go(Routes.attendance),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Volver a funcionarios'))),
-      const SizedBox(height: 8),
-      DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const OfficialLogo(compact: true, width: 44),
-            const SizedBox(height: 10),
-            Text(AppIdentity.institution.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 1)),
-            const SizedBox(height: 4),
-            Text('REPORTE DE ASISTENCIA',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            if (report?.period != null)
-              Text('Período: ${attendancePeriod(report!.period, true)}',
-                  textAlign: TextAlign.center),
-            const Divider(height: 24),
-            if (employee != null) ...[
-              _ReportFields(fields: [
-                ('Funcionario', employee.name),
-                ('Documento', employee.document ?? '—'),
-                ('Cargo', employee.position ?? '—'),
-                ('Unidad / área', employee.unit ?? '—'),
-                ('Turno', shifts.isEmpty ? '—' : shifts.join(', ')),
-              ]),
-              const SizedBox(height: 12),
-            ],
-            SizedBox(
-              width: 360,
-              child: InkWell(
-                key: const ValueKey('attendance-date-range'),
-                onTap: _loading ? null : _pickRange,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Periodo de consulta',
-                    prefixIcon: Icon(Icons.date_range),
-                    border: OutlineInputBorder(),
-                  ),
-                  child: Text(
-                    '${DateFormat('dd/MM/yyyy', 'es_BO').format(_from)} — '
-                    '${DateFormat('dd/MM/yyyy', 'es_BO').format(_to)}',
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            CheckboxListTile(
-              key: const ValueKey('single-shift-toggle'),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('Una sola jornada'),
-              value: _singleShift,
-              onChanged: _loading
-                  ? null
-                  : (value) => setState(() => _singleShift = value ?? false),
-            ),
-            const SizedBox(height: 4),
-            Text('Horario de trabajo',
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            if (_singleShift)
-              _scheduleControls(const [0, 1])
-            else
-              LayoutBuilder(builder: (context, constraints) {
-                final groups = [
-                  ('Primera jornada', const [0, 1]),
-                  ('Segunda jornada', const [2, 3]),
-                ];
-                return Wrap(
-                  spacing: 16,
-                  runSpacing: 12,
-                  children: [
-                    for (final (label, indexes) in groups)
-                      SizedBox(
-                        width: constraints.maxWidth >= 1050
-                            ? (constraints.maxWidth - 16) / 2
-                            : constraints.maxWidth,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(label.toUpperCase(),
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: theme.colorScheme.primary)),
-                            const SizedBox(height: 5),
-                            _scheduleControls(indexes),
-                          ],
-                        ),
-                      ),
+    return LayoutBuilder(builder: (context, pageConstraints) {
+      final pageWidth = pageConstraints.maxWidth;
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+                style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                onPressed: () => context.go(Routes.attendance),
+                icon: const Icon(Icons.arrow_back, size: 18),
+                label: const Text('Volver a funcionarios'))),
+        const SizedBox(height: 4),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(pageWidth < 600 ? 10 : 12),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ReportHeading(period: report?.period),
+                  const Divider(height: 18),
+                  if (employee != null) ...[
+                    _ReportFields(fields: [
+                      ('Funcionario', employee.name),
+                      ('CI', employee.document ?? '—'),
+                      ('Cargo', employee.position ?? '—'),
+                      ('Unidad / área', employee.unit ?? '—'),
+                      ('Turno', shifts.isEmpty ? '—' : shifts.join(', ')),
+                    ]),
+                    const SizedBox(height: 10),
                   ],
-                );
-              }),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-                onPressed: _loading ? null : _load,
-                icon: const Icon(Icons.search),
-                label: const Text('Consultar')),
-            const SizedBox(height: 12),
-            if (_loading)
-              const LinearProgressIndicator()
-            else if (_error != null)
-              AttendanceNotice(_error!, error: true)
-            else if (report != null) ...[
-              if (!report.days.any((day) => day.records.isNotEmpty))
-                const AttendanceNotice(
-                    'No existen marcaciones biométricas para este funcionario en el período seleccionado.'),
-              if (report.pending.isNotEmpty) AttendancePending(report.pending),
-              const SizedBox(height: 8),
-              _EmptyDaysToggle(
-                showEmptyDays: _showEmptyDays,
-                visibleDays: visibleDays.length,
-                totalDays: report.days.length,
-                onChanged: (value) => setState(() => _showEmptyDays = value),
-              ),
-              const SizedBox(height: 8),
-              _DailyReportTable(
-                  days: visibleDays, singleShift: report.singleShift),
-              const SizedBox(height: 16),
-              Text('TOTALES DEL PERÍODO',
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              _ReportFields(fields: [
-                ('Marcaciones', report.summary?.records.toString() ?? '—'),
-                (
-                  'Días con observación',
-                  (report.summary?.evaluated ?? 0) > 0
-                      ? report.summary!.observations.toString()
-                      : '—'
-                ),
-                (
-                  'Atrasos (min)',
-                  attendanceMinutes(report.summary?.lateMinutes)
-                ),
-                (
-                  'Salidas anticipadas (min)',
-                  attendanceMinutes(report.summary?.earlyMinutes)
-                ),
-                (
-                  'Ausencia (min)',
-                  attendanceMinutes(report.summary?.absenceMinutes)
-                ),
-                (
-                  'Horas extra (min)',
-                  attendanceMinutes(report.summary?.overtimeMinutes)
-                ),
-              ]),
-            ],
-          ]),
+                  LayoutBuilder(builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final groups = _singleShift
+                        ? <(String, List<int>)>[
+                            ('Jornada única', const [0, 1])
+                          ]
+                        : <(String, List<int>)>[
+                            ('Primera jornada', const [0, 1]),
+                            ('Segunda jornada', const [2, 3]),
+                          ];
+                    final groupWidth = width < 600
+                        ? width
+                        : ((width - 12) / 2).clamp(300.0, 460.0).toDouble();
+                    final periodWidth = width < 600 ? width : 230.0;
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: periodWidth,
+                          child: InkWell(
+                            key: const ValueKey('attendance-date-range'),
+                            onTap: _loading ? null : _pickRange,
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Periodo de consulta',
+                                prefixIcon: Icon(Icons.date_range, size: 19),
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 9),
+                              ),
+                              child: Text(
+                                '${DateFormat('dd/MM/yyyy', 'es_BO').format(_from)} — '
+                                '${DateFormat('dd/MM/yyyy', 'es_BO').format(_to)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: width < 600 ? width : 180,
+                          child: Row(children: [
+                            Checkbox(
+                              key: const ValueKey('single-shift-toggle'),
+                              value: _singleShift,
+                              visualDensity: VisualDensity.compact,
+                              onChanged: _loading
+                                  ? null
+                                  : (value) => setState(
+                                      () => _singleShift = value ?? false),
+                            ),
+                            const Expanded(child: Text('Una sola jornada')),
+                          ]),
+                        ),
+                        for (final (label, indexes) in groups)
+                          SizedBox(
+                            width: groupWidth,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(label.toUpperCase(),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: theme.colorScheme.primary)),
+                                const SizedBox(height: 3),
+                                _scheduleControls(indexes),
+                              ],
+                            ),
+                          ),
+                        SizedBox(
+                          width: width < 600 ? width : 132,
+                          child: FilledButton.icon(
+                            onPressed: _loading ? null : _load,
+                            style: FilledButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10)),
+                            icon: const Icon(Icons.search, size: 18),
+                            label: const Text('Consultar'),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: 12),
+                  if (_loading)
+                    const LinearProgressIndicator()
+                  else if (_error != null)
+                    AttendanceNotice(_error!, error: true)
+                  else if (report != null) ...[
+                    if (!report.days.any((day) => day.records.isNotEmpty))
+                      const AttendanceNotice(
+                          'No existen marcaciones biométricas para este funcionario en el período seleccionado.'),
+                    if (report.pending.isNotEmpty)
+                      AttendancePending(report.pending),
+                    const SizedBox(height: 8),
+                    _EmptyDaysToggle(
+                      showEmptyDays: _showEmptyDays,
+                      visibleDays: visibleDays.length,
+                      totalDays: report.days.length,
+                      onChanged: (value) =>
+                          setState(() => _showEmptyDays = value),
+                    ),
+                    const SizedBox(height: 8),
+                    _DailyReportTable(
+                        days: visibleDays, singleShift: report.singleShift),
+                    const SizedBox(height: 16),
+                    Text('INDICADORES DEL PERÍODO',
+                        style: theme.textTheme.labelLarge
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 6),
+                    _ReportSummary(summary: report.summary),
+                  ],
+                ]),
+          ),
         ),
-      ),
-    ]);
+      ]);
+    });
+  }
+}
+
+class _ReportHeading extends StatelessWidget {
+  const _ReportHeading({required this.period});
+  final AttendancePeriod? period;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 500;
+      return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        const OfficialLogo(compact: true, width: 40),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+                compact ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+            children: [
+              Text(AppIdentity.institution.toUpperCase(),
+                  textAlign: compact ? TextAlign.start : TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w700, letterSpacing: .4)),
+              Text('REPORTE DE ASISTENCIA',
+                  textAlign: compact ? TextAlign.start : TextAlign.center,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+        if (!compact && period != null) ...[
+          const SizedBox(width: 10),
+          Text('Período: ${attendancePeriod(period!, true)}',
+              style: theme.textTheme.bodySmall),
+        ],
+      ]);
+    });
   }
 }
 
@@ -344,33 +373,120 @@ class _ReportFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Table(
-      border: TableBorder.all(color: theme.dividerColor),
-      columnWidths: const {0: FlexColumnWidth(1), 1: FlexColumnWidth(2)},
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: [
-        for (final (label, value) in fields)
-          TableRow(children: [
-            ColoredBox(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(label,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+    return LayoutBuilder(builder: (context, constraints) {
+      final columns = switch (constraints.maxWidth) {
+        >= 1200 => 5,
+        >= 900 => 4,
+        >= 600 => 3,
+        >= 400 => 2,
+        _ => 1,
+      };
+      const spacing = 6.0;
+      final cellWidth =
+          (constraints.maxWidth - spacing * (columns - 1)) / columns;
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: [
+          for (final (label, value) in fields)
+            SizedBox(
+              width: cellWidth,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.dividerColor),
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withOpacity(.35),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label.toUpperCase(),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(value,
+                          softWrap: true,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: label == 'Funcionario'
+                                ? FontWeight.w700
+                                : FontWeight.normal,
+                          )),
+                    ],
+                  ),
+                ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(value,
-                  style: TextStyle(
-                    fontWeight: label == 'Funcionario'
-                        ? FontWeight.w700
-                        : FontWeight.normal,
-                  )),
+        ],
+      );
+    });
+  }
+}
+
+class _ReportSummary extends StatelessWidget {
+  const _ReportSummary({required this.summary});
+  final AttendanceSummary? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final values = <(String, String)>[
+      ('Marcaciones', summary?.records.toString() ?? '—'),
+      (
+        'Días con observación',
+        (summary?.evaluated ?? 0) > 0 ? summary!.observations.toString() : '—'
+      ),
+      ('Atrasos (min)', attendanceMinutes(summary?.lateMinutes)),
+      ('Salidas anticipadas (min)', attendanceMinutes(summary?.earlyMinutes)),
+      ('Ausencia (min)', attendanceMinutes(summary?.absenceMinutes)),
+      ('Horas extra (min)', attendanceMinutes(summary?.overtimeMinutes)),
+    ];
+    return LayoutBuilder(builder: (context, constraints) {
+      final columns = ((constraints.maxWidth + 8) / 158).floor().clamp(1, 4);
+      const spacing = 8.0;
+      final width = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+      final theme = Theme.of(context);
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: [
+          for (final (label, value) in values)
+            SizedBox(
+              width: width,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.dividerColor),
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withOpacity(.35),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: 2),
+                      Text(value,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ])),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ]),
-      ],
-    );
+        ],
+      );
+    });
   }
 }
 
@@ -475,11 +591,11 @@ class _DailyReportTable extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.w700),
               headingRowColor: WidgetStatePropertyAll(
                   theme.colorScheme.surfaceContainerHighest),
-              headingRowHeight: 42,
+              headingRowHeight: 40,
               dataRowMinHeight: 32,
-              dataRowMaxHeight: 40,
-              columnSpacing: 12,
-              horizontalMargin: 8,
+              dataRowMaxHeight: double.infinity,
+              columnSpacing: 8,
+              horizontalMargin: 6,
               columns: [
                 for (final title in [
                   'Fecha',
@@ -503,7 +619,23 @@ class _DailyReportTable extends StatelessWidget {
                 ])
                   DataColumn(
                     numeric: title.endsWith('(min)'),
-                    label: Text(title),
+                    label: SizedBox(
+                      width: switch (title) {
+                        'Fecha' => 82,
+                        'Entrada' || 'Salida' => 100,
+                        'Entrada 1ra jornada' ||
+                        'Salida 1ra jornada' ||
+                        'Entrada 2da jornada' ||
+                        'Salida 2da jornada' =>
+                          122,
+                        'Marcaciones' => 82,
+                        'Estado' => 92,
+                        'Observaciones' => 240,
+                        'Evidencia' => 142,
+                        _ => 86,
+                      },
+                      child: Text(title, softWrap: true),
+                    ),
                   ),
               ],
               rows: [
@@ -529,16 +661,15 @@ class _DailyReportTable extends StatelessWidget {
                       DataCell(Text(attendanceMinutes(minutes))),
                     DataCell(day.incidents.isEmpty
                         ? const Text('—')
-                        : Tooltip(
-                            message: day.incidents
-                                .map((incident) => incident.description)
-                                .join('\n'),
+                        : SizedBox(
+                            width: 240,
                             child: Text(
-                                day.incidents
-                                    .map((incident) => incident.description)
-                                    .join('; '),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis))),
+                              day.incidents
+                                  .map((incident) => incident.description)
+                                  .join('; '),
+                              softWrap: true,
+                            ),
+                          )),
                     DataCell(AttendanceStatusBadge(day.status)),
                     DataCell(day.records.isEmpty
                         ? const Text('—')

@@ -126,8 +126,8 @@ void main() {
     expect(request.containsKey('afternoon_end_tolerance'), isFalse);
     expect(find.text('Entrada 1ra jornada'), findsNothing);
     expect(find.text('Entrada 2da jornada'), findsNothing);
-    expect(find.text('Entrada'), findsOneWidget);
-    expect(find.text('Salida'), findsOneWidget);
+    expect(find.text('Entrada'), findsNWidgets(2));
+    expect(find.text('Salida'), findsNWidgets(2));
   });
 
   testWidgets('Las marcaciones se muestran numeradas y sin datos técnicos',
@@ -148,5 +148,81 @@ void main() {
     expect(find.textContaining('source:', findRichText: true), findsNothing);
     expect(find.textContaining('Lote:', findRichText: true), findsNothing);
     expect(find.textContaining('Archivo:', findRichText: true), findsNothing);
+  });
+
+  testWidgets('Las observaciones se envuelven completas en la tabla',
+      (tester) async {
+    await show(tester);
+    final observation = find.text('Entrada posterior al límite de tolerancia.; '
+        'Se detectaron tres marcaciones cercanas.');
+    expect(observation, findsOneWidget);
+    final text = tester.widget<Text>(observation);
+    expect(text.softWrap, isTrue);
+    expect(text.maxLines, isNull);
+    expect(text.overflow, isNull);
+  });
+
+  testWidgets('El informe se adapta a escritorio, tablet y celular',
+      (tester) async {
+    final sizes = [
+      const Size(1920, 1080),
+      const Size(1366, 768),
+      const Size(1024, 768),
+      const Size(768, 1024),
+      const Size(390, 844),
+    ];
+    for (final size in sizes) {
+      await tester.binding.setSurfaceSize(size);
+      for (final singleShift in [false, true]) {
+        await tester.pumpWidget(MaterialApp(
+          key: ValueKey('${size.width}-$singleShift'),
+          locale: const Locale('es', 'BO'),
+          supportedLocales: const [Locale('es', 'BO')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: Column(children: [
+              const SizedBox(height: 64), // Cabecera de la aplicación.
+              Expanded(
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final desktop = constraints.maxWidth >= 1100;
+                  final compact = constraints.maxWidth < 600;
+                  return Row(children: [
+                    if (desktop) const SizedBox(width: 280), // Menú lateral.
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(compact ? 20 : 36),
+                        child: const EmployeeAttendanceReport(
+                            key: ValueKey('responsive-report'),
+                            employeeId: 'empleado-1'),
+                      ),
+                    ),
+                  ]);
+                }),
+              ),
+            ]),
+          ),
+        ));
+        await tester.pumpAndSettle();
+        if (singleShift) {
+          await tester.tap(find.byKey(const ValueKey('single-shift-toggle')));
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(find.text('Consultar'));
+          await tester.tap(find.text('Consultar'));
+          await tester.pumpAndSettle();
+        }
+        await tester.ensureVisible(find.text('INDICADORES DEL PERÍODO'));
+        await tester.pumpAndSettle();
+        expect(find.byType(DataTable), findsOneWidget,
+            reason:
+                'La tabla debe seguir visible en ${size.width}×${size.height}');
+        expect(tester.takeException(), isNull,
+            reason: 'Sin overflow en ${size.width}×${size.height}');
+      }
+    }
+    await tester.binding.setSurfaceSize(null);
   });
 }
